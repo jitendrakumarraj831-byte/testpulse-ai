@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
-  generateMockQuestions,
+  mapApiQuestionToGenerated,
   type DifficultyLevel,
+  type GenerateQuestionsResponse,
   type GeneratedQuestion,
 } from "@/lib/admin/question-generator";
 import { GeneratorForm } from "@/components/admin/GeneratorForm";
@@ -24,22 +25,51 @@ export function AIGeneratorPanel() {
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const startGeneration = () => {
+  const startGeneration = async () => {
     if (!subject.trim() || !topic.trim()) {
       setShowValidation(true);
       return;
     }
     setShowValidation(false);
     setIsPublished(false);
+    setErrorMessage(null);
     setPhase("generating");
-  };
 
-  const handleGenerationComplete = () => {
-    setQuestions(
-      generateMockQuestions({ subject, topic, totalQuestions, difficulty }),
-    );
-    setPhase("results");
+    try {
+      const response = await fetch("/api/generate-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject,
+          topic,
+          count: totalQuestions,
+          difficulty,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(
+          errorBody?.error ?? `Request failed with status ${response.status}`,
+        );
+      }
+
+      const data: GenerateQuestionsResponse = await response.json();
+      setQuestions(
+        data.questions.map((question) =>
+          mapApiQuestionToGenerated(question, { subject, topic, difficulty }),
+        ),
+      );
+      setPhase("results");
+    } catch (error) {
+      console.error("Failed to generate questions:", error);
+      setErrorMessage(
+        "We couldn't generate questions right now. Please try again.",
+      );
+      setPhase("idle");
+    }
   };
 
   const handlePublish = () => {
@@ -72,13 +102,16 @@ export function AIGeneratorPanel() {
         onGenerate={startGeneration}
       />
 
+      {errorMessage && (
+        <p className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          {errorMessage}
+        </p>
+      )}
+
       <div className="mt-6">
         <AnimatePresence mode="wait">
           {phase === "generating" && (
-            <GenerationProgress
-              key="progress"
-              onComplete={handleGenerationComplete}
-            />
+            <GenerationProgress key="progress" onComplete={() => {}} />
           )}
           {phase === "results" && (
             <ResultsPanel
