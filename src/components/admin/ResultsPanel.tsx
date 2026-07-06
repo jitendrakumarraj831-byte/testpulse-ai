@@ -1,0 +1,105 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { CheckCircle2, ListChecks, RefreshCcw, Rocket } from "lucide-react";
+import type { GeneratedQuestion } from "@/lib/admin/question-generator";
+import { QuestionCard } from "@/components/admin/QuestionCard";
+
+interface ResultsPanelProps {
+  questions: GeneratedQuestion[];
+  isPublishing: boolean;
+  isPublished: boolean;
+  onRegenerate: () => void;
+  onPublish: () => void;
+  onCreateAnother: () => void;
+}
+
+export function ResultsPanel({
+  questions,
+  isPublishing,
+  isPublished,
+  onRegenerate,
+  onPublish,
+  onCreateAnother,
+}: ResultsPanelProps) {
+  const [firstQuestion] = questions;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      <div className="card-glow flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/30">
+            <ListChecks className="h-5 w-5 text-cyan-400" />
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-white">
+              {questions.length} Questions Ready for Review
+            </h2>
+            <p className="text-sm text-slate-500">
+              {firstQuestion?.subject} &middot; {firstQuestion?.topic} &middot;{" "}
+              {firstQuestion?.difficulty} difficulty
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        {questions.map((question) => (
+          <QuestionCard key={question.id} question={question} />
+        ))}
+      </div>
+
+      <div className="card-glow sticky bottom-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-2xl backdrop-blur-lg">
+        {isPublished ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 text-sm font-medium text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+              Test published successfully — now live for students.
+            </div>
+            <button
+              type="button"
+              onClick={onCreateAnother}
+              className="rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
+            >
+              Create Another Batch
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-400">
+              Review each question above before publishing this batch to
+              students.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onRegenerate}
+                disabled={isPublishing}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Regenerate Batch
+              </button>
+              <motion.button
+                type="button"
+                onClick={onPublish}
+                disabled={isPublishing}
+                whileHover={isPublishing ? undefined : { scale: 1.02 }}
+                whileTap={isPublishing ? undefined : { scale: 0.97 }}
+                className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <Rocket className="h-4 w-4" />
+                {isPublishing ? "Publishing…" : "Approve & Publish Test"}
+              </motion.button>
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.section>
+  );
+}
