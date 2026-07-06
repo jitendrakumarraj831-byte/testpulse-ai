@@ -194,6 +194,48 @@ function shuffleWithRandom<T>(items: T[], random: () => number): T[] {
   return result;
 }
 
+/** Flat question shape returned by the `/api/generate-questions` route. */
+export interface ApiQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: OptionLabel;
+  explanation: string;
+}
+
+export interface GenerateQuestionsResponse {
+  questions: ApiQuestion[];
+  source: "ai" | "mock";
+}
+
+export interface GenerateQuestionsRequestBody {
+  subject: string;
+  topic: string;
+  count: number;
+  difficulty: DifficultyLevel;
+}
+
+/** Adapts a flat API question into the UI's richer GeneratedQuestion shape. */
+export function mapApiQuestionToGenerated(
+  question: ApiQuestion,
+  context: { subject: string; topic: string; difficulty: DifficultyLevel },
+): GeneratedQuestion {
+  return {
+    id: `${context.difficulty}-${question.id}-${context.subject}-${context.topic}`.toLowerCase(),
+    questionNumber: question.id,
+    subject: context.subject,
+    topic: context.topic,
+    difficulty: context.difficulty,
+    prompt: question.question,
+    options: question.options.map((text, index) => ({
+      label: OPTION_LABELS[index],
+      text,
+    })),
+    correctLabel: question.correctAnswer,
+    explanation: question.explanation,
+  };
+}
+
 export function generateMockQuestions(
   params: GenerationParams,
 ): GeneratedQuestion[] {
