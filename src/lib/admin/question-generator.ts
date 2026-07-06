@@ -215,6 +215,49 @@ export interface GenerateQuestionsRequestBody {
   difficulty: DifficultyLevel;
 }
 
+/** Request body accepted by `/api/exams/publish`. */
+export interface PublishExamRequestBody {
+  title?: string;
+  subject: string;
+  topic: string;
+  difficulty: DifficultyLevel;
+  questions: ApiQuestion[];
+}
+
+export interface PublishExamResponse {
+  id: string;
+  url: string;
+  source: "supabase" | "simulated";
+}
+
+/** Runtime shape check for a single flat API question. */
+export function isApiQuestion(value: unknown): value is ApiQuestion {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.question === "string" &&
+    Array.isArray(candidate.options) &&
+    candidate.options.length === 4 &&
+    candidate.options.every((option) => typeof option === "string") &&
+    typeof candidate.correctAnswer === "string" &&
+    (OPTION_LABELS as readonly string[]).includes(candidate.correctAnswer) &&
+    typeof candidate.explanation === "string"
+  );
+}
+
+/** Adapts the UI's richer GeneratedQuestion shape back into a flat API question. */
+export function mapGeneratedToApiQuestion(
+  question: GeneratedQuestion,
+): ApiQuestion {
+  return {
+    id: question.questionNumber,
+    question: question.prompt,
+    options: question.options.map((option) => option.text),
+    correctAnswer: question.correctLabel,
+    explanation: question.explanation,
+  };
+}
+
 /** Adapts a flat API question into the UI's richer GeneratedQuestion shape. */
 export function mapApiQuestionToGenerated(
   question: ApiQuestion,

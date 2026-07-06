@@ -4,9 +4,11 @@ import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
   mapApiQuestionToGenerated,
+  mapGeneratedToApiQuestion,
   type DifficultyLevel,
   type GenerateQuestionsResponse,
   type GeneratedQuestion,
+  type PublishExamResponse,
 } from "@/lib/admin/question-generator";
 import { GeneratorForm } from "@/components/admin/GeneratorForm";
 import { GenerationProgress } from "@/components/admin/GenerationProgress";
@@ -25,6 +27,8 @@ export function AIGeneratorPanel() {
   const [questions, setQuestions] = useState<GeneratedQuestion[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const startGeneration = async () => {
@@ -34,6 +38,8 @@ export function AIGeneratorPanel() {
     }
     setShowValidation(false);
     setIsPublished(false);
+    setPublishedUrl(null);
+    setPublishError(null);
     setErrorMessage(null);
     setPhase("generating");
 
@@ -72,18 +78,49 @@ export function AIGeneratorPanel() {
     }
   };
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     setIsPublishing(true);
-    setTimeout(() => {
-      setIsPublishing(false);
+    setPublishError(null);
+
+    try {
+      const response = await fetch("/api/exams/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${subject}: ${topic}`,
+          subject,
+          topic,
+          difficulty,
+          questions: questions.map(mapGeneratedToApiQuestion),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(
+          errorBody?.error ?? `Request failed with status ${response.status}`,
+        );
+      }
+
+      const data: PublishExamResponse = await response.json();
+      setPublishedUrl(data.url);
       setIsPublished(true);
-    }, 900);
+    } catch (error) {
+      console.error("Failed to publish exam:", error);
+      setPublishError(
+        "We couldn't publish this test right now. Please try again.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleCreateAnother = () => {
     setPhase("idle");
     setQuestions([]);
     setIsPublished(false);
+    setPublishedUrl(null);
+    setPublishError(null);
   };
 
   return (
@@ -119,6 +156,8 @@ export function AIGeneratorPanel() {
               questions={questions}
               isPublishing={isPublishing}
               isPublished={isPublished}
+              publishedUrl={publishedUrl}
+              publishError={publishError}
               onRegenerate={startGeneration}
               onPublish={handlePublish}
               onCreateAnother={handleCreateAnother}
