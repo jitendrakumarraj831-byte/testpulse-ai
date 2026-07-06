@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --accent: #06b6d4;
+  --accent-foreground: #ecfeff;
+  --surface: #0f172a;
+  --border: #1e293b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --font-sans: var(--font-inter);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(6, 182, 212, 0.35);
+  color: #ecfeff;
+}
+
+/* Radial cyan glow used behind hero/feature sections */
+.glow-field {
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(6, 182, 212, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(6, 182, 212, 0.12), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(8, 145, 178, 0.12), transparent 50%);
+}
+
+.text-glow {
+  text-shadow: 0 0 30px rgba(6, 182, 212, 0.35);
+}
+
+.card-glow {
+  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.08);
+}
+
+.card-glow:hover {
+  box-shadow:
+    0 0 0 1px rgba(6, 182, 212, 0.35),
+    0 0 40px -8px rgba(6, 182, 212, 0.45);
+}
+
+/* Thin scrollbar styled to match the dark/cyan theme */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
