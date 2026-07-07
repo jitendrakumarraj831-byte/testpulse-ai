@@ -7,6 +7,8 @@ export interface SubjectAccent {
   hoverBorder: string;
   hoverShadow: string;
   chip: string;
+  /** Solid border/shadow classes for a persistently "active" state (e.g. the current item in a nav deck). */
+  activeRing: string;
 }
 
 export interface Subject {
@@ -32,6 +34,8 @@ export const SUBJECTS: Subject[] = [
       hoverShadow:
         "group-hover:shadow-[0_0_45px_-10px_rgba(168,85,247,0.6)]",
       chip: "bg-purple-500/10 text-purple-300 ring-1 ring-purple-500/30",
+      activeRing:
+        "border-purple-500 shadow-[0_0_16px_-2px_rgba(168,85,247,0.8)]",
     },
   },
   {
@@ -47,6 +51,8 @@ export const SUBJECTS: Subject[] = [
       hoverShadow:
         "group-hover:shadow-[0_0_45px_-10px_rgba(245,158,11,0.6)]",
       chip: "bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/30",
+      activeRing:
+        "border-amber-500 shadow-[0_0_16px_-2px_rgba(245,158,11,0.8)]",
     },
   },
   {
@@ -61,6 +67,8 @@ export const SUBJECTS: Subject[] = [
       hoverBorder: "group-hover:border-cyan-500/50",
       hoverShadow: "group-hover:shadow-[0_0_45px_-10px_rgba(6,182,212,0.6)]",
       chip: "bg-cyan-500/10 text-cyan-300 ring-1 ring-cyan-500/30",
+      activeRing:
+        "border-cyan-500 shadow-[0_0_16px_-2px_rgba(6,182,212,0.8)]",
     },
   },
   {
@@ -76,6 +84,8 @@ export const SUBJECTS: Subject[] = [
       hoverShadow:
         "group-hover:shadow-[0_0_45px_-10px_rgba(16,185,129,0.6)]",
       chip: "bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/30",
+      activeRing:
+        "border-emerald-500 shadow-[0_0_16px_-2px_rgba(16,185,129,0.8)]",
     },
   },
 ];
