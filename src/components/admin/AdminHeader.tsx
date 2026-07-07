@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { Activity, ChevronRight, LayoutDashboard } from "lucide-react";
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  activeLabel?: string;
+}
+
+export function AdminHeader({
+  activeLabel = "AI Question Generator",
+}: AdminHeaderProps) {
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
@@ -43,7 +49,7 @@ export function AdminHeader() {
         <ChevronRight className="h-3.5 w-3.5" />
         <span>AI Tools</span>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="font-medium text-cyan-400">AI Question Generator</span>
+        <span className="font-medium text-cyan-400">{activeLabel}</span>
       </div>
     </header>
   );

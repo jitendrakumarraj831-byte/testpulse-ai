@@ -52,6 +52,7 @@ export default async function TestPage({ params }: TestPageProps) {
     <div className="glow-field flex min-h-screen flex-1 flex-col bg-slate-950">
       <Navbar />
       <TestWorkspace
+        examId={exam.id}
         examTitle={exam.title}
         subjectName={subject.name}
         subjectSlug={subjectSlug}

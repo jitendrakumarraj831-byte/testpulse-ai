@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
+  AlertTriangle,
   CheckCircle2,
   Clock,
+  Loader2,
   RotateCcw,
   XCircle,
 } from "lucide-react";
@@ -15,8 +17,11 @@ import type {
   OptionLabel,
 } from "@/lib/admin/question-generator";
 import type { SubjectAccent } from "@/lib/student/subjects";
+import type { StudentResponseInsert } from "@/lib/student/responses";
+import { createClient } from "@/utils/supabase/client";
 
 interface TestWorkspaceProps {
+  examId: string;
   examTitle: string;
   subjectName: string;
   subjectSlug: string;
@@ -26,7 +31,10 @@ interface TestWorkspaceProps {
   accent: SubjectAccent;
 }
 
+type SaveStatus = "idle" | "saved" | "error";
+
 const OPTION_LABELS: OptionLabel[] = ["A", "B", "C", "D"];
+const DEFAULT_STUDENT_NAME = "Guest Student";
 
 function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
@@ -35,6 +43,7 @@ function formatTime(totalSeconds: number): string {
 }
 
 export function TestWorkspace({
+  examId,
   examTitle,
   subjectName,
   subjectSlug,
@@ -45,32 +54,68 @@ export function TestWorkspace({
 }: TestWorkspaceProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, OptionLabel>>({});
+  const [studentName, setStudentName] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
+  const [finalScore, setFinalScore] = useState(0);
+
+  const submitTest = async () => {
+    if (isSaving || isSubmitted) return;
+    setIsSaving(true);
+
+    const score = questions.filter(
+      (question) => answers[question.id] === question.correctAnswer,
+    ).length;
+
+    try {
+      const supabase = createClient();
+      const payload: StudentResponseInsert = {
+        exam_id: examId,
+        student_name: studentName.trim() || DEFAULT_STUDENT_NAME,
+        answers,
+        score,
+      };
+      const { error } = await supabase
+        .from("student_responses")
+        .insert(payload);
+
+      if (error) throw error;
+      setSaveStatus("saved");
+    } catch (error) {
+      console.error("Failed to save test response:", error);
+      setSaveStatus("error");
+    } finally {
+      setFinalScore(score);
+      setIsSaving(false);
+      setIsSubmitted(true);
+    }
+  };
+
+  const submitTestRef = useRef(submitTest);
+  submitTestRef.current = submitTest;
 
   useEffect(() => {
-    if (isSubmitted) return;
+    if (isSubmitted || isSaving) return;
     const interval = setInterval(() => {
       setSecondsLeft((current) => {
         if (current <= 1) {
           clearInterval(interval);
-          setIsSubmitted(true);
+          void submitTestRef.current();
           return 0;
         }
         return current - 1;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSubmitted]);
+  }, [isSubmitted, isSaving]);
 
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
-  const score = questions.filter(
-    (question) => answers[question.id] === question.correctAnswer,
-  ).length;
 
   const selectOption = (label: OptionLabel) => {
-    if (isSubmitted) return;
+    if (isSubmitted || isSaving) return;
     setAnswers((current) => ({ ...current, [currentQuestion.id]: label }));
   };
 
@@ -78,6 +123,8 @@ export function TestWorkspace({
     setAnswers({});
     setCurrentIndex(0);
     setIsSubmitted(false);
+    setIsSaving(false);
+    setSaveStatus("idle");
     setSecondsLeft(durationMinutes * 60);
   };
 
@@ -101,11 +148,25 @@ export function TestWorkspace({
             </h1>
             <p className="mt-2 text-sm text-slate-400">{examTitle}</p>
             <p className="mt-6 text-4xl font-bold text-white">
-              {score} / {questions.length}
+              {finalScore} / {questions.length}
             </p>
             <p className="mt-1 text-sm font-medium text-slate-500">
-              {Math.round((score / questions.length) * 100)}% correct
+              {Math.round((finalScore / questions.length) * 100)}% correct
             </p>
+
+            {saveStatus === "saved" && (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Saved to your progress history
+              </p>
+            )}
+            {saveStatus === "error" && (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-400">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Your score was calculated, but this attempt couldn&apos;t be
+                saved.
+              </p>
+            )}
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <button
@@ -195,6 +256,15 @@ export function TestWorkspace({
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={studentName}
+              onChange={(event) => setStudentName(event.target.value)}
+              placeholder={DEFAULT_STUDENT_NAME}
+              disabled={isSaving}
+              aria-label="Your name"
+              className="w-32 rounded-full border border-slate-700 bg-slate-900/70 px-3.5 py-2 text-xs text-white placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-40 sm:text-sm"
+            />
             <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-2 text-sm font-medium text-slate-300">
               <Clock className="h-4 w-4 text-cyan-400" />
               {formatTime(secondsLeft)}
@@ -291,7 +361,7 @@ export function TestWorkspace({
           <button
             type="button"
             onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
-            disabled={currentIndex === 0}
+            disabled={currentIndex === 0 || isSaving}
             className="rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Previous
@@ -300,10 +370,18 @@ export function TestWorkspace({
           {currentIndex === questions.length - 1 ? (
             <button
               type="button"
-              onClick={() => setIsSubmitted(true)}
-              className="rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)]"
+              onClick={() => void submitTest()}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Submit Test
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Submit Test"
+              )}
             </button>
           ) : (
             <button
@@ -313,7 +391,8 @@ export function TestWorkspace({
                   Math.min(questions.length - 1, index + 1),
                 )
               }
-              className="rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)]"
+              disabled={isSaving}
+              className="rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               Next
             </button>
