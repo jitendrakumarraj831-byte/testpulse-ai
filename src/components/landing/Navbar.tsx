@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, Menu, X } from "lucide-react";
+import { Activity, Menu, Trophy, X } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
@@ -56,6 +57,13 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <Link
+            href="/leaderboard"
+            className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1.5 text-sm font-medium text-amber-300 transition-colors hover:border-amber-400/50 hover:bg-amber-500/20 hover:text-amber-200"
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            Leaderboard
+          </Link>
           <a
             href="#login"
             className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
@@ -98,6 +106,14 @@ export function Navbar() {
                 {link.label}
               </a>
             ))}
+            <Link
+              href="/leaderboard"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-amber-300 hover:bg-white/5"
+            >
+              <Trophy className="h-4 w-4" />
+              Leaderboard
+            </Link>
             <a
               href="#create-account"
               onClick={() => setIsMenuOpen(false)}
