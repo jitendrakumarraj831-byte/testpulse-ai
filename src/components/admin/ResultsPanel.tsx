@@ -1,7 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { CheckCircle2, ListChecks, RefreshCcw, Rocket } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  CheckCircle2,
+  Link2,
+  ListChecks,
+  RefreshCcw,
+  Rocket,
+} from "lucide-react";
 import type { GeneratedQuestion } from "@/lib/admin/question-generator";
 import { QuestionCard } from "@/components/admin/QuestionCard";
 
@@ -9,6 +15,8 @@ interface ResultsPanelProps {
   questions: GeneratedQuestion[];
   isPublishing: boolean;
   isPublished: boolean;
+  publishedUrl: string | null;
+  publishError: string | null;
   onRegenerate: () => void;
   onPublish: () => void;
   onCreateAnother: () => void;
@@ -18,6 +26,8 @@ export function ResultsPanel({
   questions,
   isPublishing,
   isPublished,
+  publishedUrl,
+  publishError,
   onRegenerate,
   onPublish,
   onCreateAnother,
@@ -55,50 +65,80 @@ export function ResultsPanel({
       </div>
 
       <div className="card-glow sticky bottom-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-2xl backdrop-blur-lg">
-        {isPublished ? (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5 text-sm font-medium text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
-              Test published successfully — now live for students.
-            </div>
-            <button
-              type="button"
-              onClick={onCreateAnother}
-              className="rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
+        <AnimatePresence mode="wait" initial={false}>
+          {isPublished && publishedUrl ? (
+            <motion.div
+              key="published"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              className="flex flex-wrap items-center justify-between gap-4"
             >
-              Create Another Batch
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-400">
-              Review each question above before publishing this batch to
-              students.
-            </p>
-            <div className="flex gap-3">
+              <div>
+                <div className="flex items-center gap-2.5 text-sm font-medium text-emerald-400">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Test published successfully — now live for students.
+                </div>
+                <a
+                  href={publishedUrl}
+                  className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-1.5 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400/60 hover:text-cyan-200"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  {publishedUrl}
+                </a>
+              </div>
               <button
                 type="button"
-                onClick={onRegenerate}
-                disabled={isPublishing}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={onCreateAnother}
+                className="rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
               >
-                <RefreshCcw className="h-4 w-4" />
-                Regenerate Batch
+                Create Another Batch
               </button>
-              <motion.button
-                type="button"
-                onClick={onPublish}
-                disabled={isPublishing}
-                whileHover={isPublishing ? undefined : { scale: 1.02 }}
-                whileTap={isPublishing ? undefined : { scale: 0.97 }}
-                className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <Rocket className="h-4 w-4" />
-                {isPublishing ? "Publishing…" : "Approve & Publish Test"}
-              </motion.button>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="unpublished"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+              className="flex flex-col gap-3"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-400">
+                  Review each question above before publishing this batch to
+                  students.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={onRegenerate}
+                    disabled={isPublishing}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                    Regenerate Batch
+                  </button>
+                  <motion.button
+                    type="button"
+                    onClick={onPublish}
+                    disabled={isPublishing}
+                    whileHover={isPublishing ? undefined : { scale: 1.02 }}
+                    whileTap={isPublishing ? undefined : { scale: 0.97 }}
+                    className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <Rocket className="h-4 w-4" />
+                    {isPublishing ? "Publishing…" : "Approve & Publish Test"}
+                  </motion.button>
+                </div>
+              </div>
+              {publishError && (
+                <p className="text-sm text-rose-400">{publishError}</p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.section>
   );

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   DIFFICULTY_LEVELS,
   generateMockQuestions,
+  isApiQuestion,
   type ApiQuestion,
   type DifficultyLevel,
   type GenerateQuestionsResponse,
@@ -10,7 +11,6 @@ import {
 const MIN_COUNT = 1;
 const MAX_COUNT = 30;
 const DEFAULT_COUNT = 10;
-const OPTION_LABELS = ["A", "B", "C", "D"] as const;
 const GEMINI_MODEL = process.env.AI_MODEL || "gemini-2.0-flash";
 
 interface RequestBody {
@@ -81,20 +81,6 @@ function mockFallback(
     correctAnswer: question.correctLabel,
     explanation: question.explanation,
   }));
-}
-
-function isApiQuestion(value: unknown): value is ApiQuestion {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.question === "string" &&
-    Array.isArray(candidate.options) &&
-    candidate.options.length === 4 &&
-    candidate.options.every((option) => typeof option === "string") &&
-    typeof candidate.correctAnswer === "string" &&
-    (OPTION_LABELS as readonly string[]).includes(candidate.correctAnswer) &&
-    typeof candidate.explanation === "string"
-  );
 }
 
 function isValidPayload(
