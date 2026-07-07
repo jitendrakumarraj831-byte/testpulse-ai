@@ -44,16 +44,34 @@ create policy "Anyone can submit a student response"
   with check (true);
 
 -- Public leaderboard projection: exposes only the columns needed for
--- rankings (never the raw `answers` JSONB, which stays locked down on
--- the base table). security_invoker = false (the default) means this
--- view runs with its owner's privileges rather than the querying
--- role's, which is what lets it read student_responses at all despite
--- that table having no public SELECT policy — do not add "using (true)"
--- to student_responses itself just to make this simpler; that would
--- expose every student's individual answer choices publicly.
+-- rankings, never the raw `answers` JSONB. security_invoker = true
+-- means the view runs with the *querying* role's own privileges
+-- (Supabase's security advisor flags the alternative, invoker = false,
+-- as a "Security Definer View" critical finding) — so read access now
+-- depends on the row policy + column grants below rather than the
+-- view silently running as its owner.
 create or replace view public.leaderboard_entries
-with (security_invoker = false) as
+with (security_invoker = true) as
 select id, exam_id, student_name, score, submitted_at
 from public.student_responses;
+
+-- Row-level policy needed for the invoker-privilege view (and any
+-- direct query) to see rows at all.
+drop policy if exists "Leaderboard columns are publicly readable" on public.student_responses;
+create policy "Leaderboard columns are publicly readable"
+  on public.student_responses for select
+  using (true);
+
+-- RLS only restricts *rows*, not *columns* — a bare "grant select on
+-- student_responses" here would hand out `answers` (every student's
+-- actual selected options) to anyone with the public anon key. Revoke
+-- any broader table-level SELECT first (Supabase's default project
+-- privileges can otherwise pre-grant it), then grant SELECT scoped to
+-- only the five leaderboard-safe columns. Querying `answers` directly,
+-- or `select *`, must keep failing with a permission error for anon/
+-- authenticated even though this table row-policy is now `using (true)`.
+revoke select on public.student_responses from anon, authenticated;
+grant select (id, exam_id, student_name, score, submitted_at)
+  on public.student_responses to anon, authenticated;
 
 grant select on public.leaderboard_entries to anon, authenticated;
