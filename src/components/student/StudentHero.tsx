@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Sparkles, TrendingUp, Users, Zap } from "lucide-react";
+import { ArrowRight, Sparkles, Trophy, TrendingUp, Users, Zap } from "lucide-react";
 import { StatCounter } from "@/components/student/StatCounter";
 
 const STATS = [
@@ -81,6 +82,22 @@ export function StudentHero() {
               </span>
             </div>
           ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-6"
+        >
+          <Link
+            href="/leaderboard"
+            className="group inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-300 transition-colors hover:border-amber-400/50 hover:bg-amber-500/20 hover:text-amber-200"
+          >
+            <Trophy className="h-4 w-4" />
+            View Live Leaderboard
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+          </Link>
         </motion.div>
       </div>
     </section>

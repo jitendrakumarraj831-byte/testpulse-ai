@@ -42,3 +42,18 @@ create policy "Exams are publicly readable"
 create policy "Anyone can submit a student response"
   on public.student_responses for insert
   with check (true);
+
+-- Public leaderboard projection: exposes only the columns needed for
+-- rankings (never the raw `answers` JSONB, which stays locked down on
+-- the base table). security_invoker = false (the default) means this
+-- view runs with its owner's privileges rather than the querying
+-- role's, which is what lets it read student_responses at all despite
+-- that table having no public SELECT policy — do not add "using (true)"
+-- to student_responses itself just to make this simpler; that would
+-- expose every student's individual answer choices publicly.
+create or replace view public.leaderboard_entries
+with (security_invoker = false) as
+select id, exam_id, student_name, score, submitted_at
+from public.student_responses;
+
+grant select on public.leaderboard_entries to anon, authenticated;
