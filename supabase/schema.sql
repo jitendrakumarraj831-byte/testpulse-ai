@@ -13,9 +13,14 @@ create table if not exists public.exams (
   created_at timestamptz not null default now()
 );
 
+-- exam_id is a free-form identifier rather than a uuid FK into `exams`,
+-- because today's student-facing catalog is a hardcoded mock catalog
+-- (string slugs like "science-rotational-dynamics-101"), not rows in
+-- `exams` — that table is only populated by the AI-generator publish
+-- flow. A strict FK would reject every response against a mock exam.
 create table if not exists public.student_responses (
   id uuid primary key default gen_random_uuid(),
-  exam_id uuid not null references public.exams (id) on delete cascade,
+  exam_id text not null,
   student_name text not null,
   answers jsonb not null,
   score numeric,
