@@ -11,12 +11,17 @@ export interface MockExam {
   status: ExamStatus;
 }
 
+/**
+ * Every exam draws its questions from that subject's fixed 15-question
+ * bank (see question-bank.ts), so questionCount is pinned to 15 across
+ * the board — it must never claim more questions than the bank has.
+ */
 export const MOCK_EXAMS: Record<string, MockExam[]> = {
   "general-knowledge": [
     {
       id: "gk-indian-history-101",
       title: "Indian History Quiz",
-      questionCount: 20,
+      questionCount: 15,
       durationMinutes: 30,
       difficulty: "Medium",
       status: "available",
@@ -32,7 +37,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "gk-static-gk-championship-301",
       title: "Static GK Championship Round",
-      questionCount: 25,
+      questionCount: 15,
       durationMinutes: 40,
       difficulty: "Hard",
       status: "locked",
@@ -50,7 +55,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "math-calculus-speed-201",
       title: "Calculus Speed Round",
-      questionCount: 20,
+      questionCount: 15,
       durationMinutes: 35,
       difficulty: "Medium",
       status: "available",
@@ -58,7 +63,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "math-advanced-trigonometry-301",
       title: "Advanced Trigonometry Challenge",
-      questionCount: 25,
+      questionCount: 15,
       durationMinutes: 45,
       difficulty: "Hard",
       status: "locked",
@@ -76,7 +81,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "science-organic-chemistry-201",
       title: "Organic Chemistry Basics",
-      questionCount: 20,
+      questionCount: 15,
       durationMinutes: 30,
       difficulty: "Easy",
       status: "available",
@@ -84,7 +89,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "science-quantum-mechanics-301",
       title: "Quantum Mechanics Deep Dive",
-      questionCount: 20,
+      questionCount: 15,
       durationMinutes: 40,
       difficulty: "Hard",
       status: "locked",
@@ -94,7 +99,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "current-affairs-weekly-digest-101",
       title: "This Week in Current Affairs",
-      questionCount: 10,
+      questionCount: 15,
       durationMinutes: 15,
       difficulty: "Easy",
       status: "available",
@@ -102,7 +107,7 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "current-affairs-global-policy-201",
       title: "Global Policy & Economics Digest",
-      questionCount: 20,
+      questionCount: 15,
       durationMinutes: 30,
       difficulty: "Medium",
       status: "available",
@@ -110,10 +115,26 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
     {
       id: "current-affairs-championship-301",
       title: "Current Affairs Championship",
-      questionCount: 25,
+      questionCount: 15,
       durationMinutes: 45,
       difficulty: "Hard",
       status: "locked",
     },
   ],
 };
+
+export interface ExamLookupResult {
+  exam: MockExam;
+  subjectSlug: string;
+}
+
+/** Reverse-looks-up an exam by its ID across all subjects, returning the owning subject slug too. */
+export function getExamById(testId: string): ExamLookupResult | undefined {
+  for (const [subjectSlug, exams] of Object.entries(MOCK_EXAMS)) {
+    const exam = exams.find((item) => item.id === testId);
+    if (exam) {
+      return { exam, subjectSlug };
+    }
+  }
+  return undefined;
+}
