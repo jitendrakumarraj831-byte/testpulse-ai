@@ -5,7 +5,7 @@ import {
   type ApiQuestion,
   type DifficultyLevel,
 } from "@/lib/admin/question-generator";
-import { getExamById } from "@/lib/student/exams";
+import { estimateDurationMinutes, getExamById } from "@/lib/student/exams";
 import { getQuestionsForSubject } from "@/lib/student/question-bank";
 import {
   getSubjectBySlug,
@@ -21,16 +21,6 @@ export interface ResolvedTest {
   durationMinutes: number;
   questions: ApiQuestion[];
   subject: SubjectMeta;
-}
-
-/** AI-published exams don't store a duration, so estimate one from question count and difficulty, roughly matching the mock catalog's pacing. */
-function estimateDurationMinutes(
-  questionCount: number,
-  difficulty: DifficultyLevel,
-): number {
-  const perQuestionMinutes =
-    difficulty === "Hard" ? 2 : difficulty === "Medium" ? 1.5 : 1;
-  return Math.max(10, Math.round(questionCount * perQuestionMinutes));
 }
 
 /**

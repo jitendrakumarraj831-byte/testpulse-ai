@@ -4,6 +4,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { ExamZoneContent } from "@/components/student/ExamZoneContent";
 import { getSubjectBySlug } from "@/lib/student/subjects";
+import { getLiveExamsForSubject } from "@/lib/student/live-exams";
 
 interface ExamZonePageProps {
   params: Promise<{ subject: string }>;
@@ -30,10 +31,15 @@ export default async function ExamZonePage({ params }: ExamZonePageProps) {
     notFound();
   }
 
+  // Live-published exams are fetched server-side and merged with the mock
+  // catalog; any failure (Supabase unconfigured, network error, no rows)
+  // resolves to [] so the page still renders the mock catalog untouched.
+  const liveExams = await getLiveExamsForSubject(slug);
+
   return (
     <div className="glow-field flex min-h-screen flex-1 flex-col bg-slate-950">
       <Navbar />
-      <ExamZoneContent subjectSlug={slug} />
+      <ExamZoneContent subjectSlug={slug} liveExams={liveExams} />
       <Footer />
     </div>
   );
