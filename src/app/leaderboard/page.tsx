@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { unstable_noStore as noStore } from "next/cache";
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { LeaderboardView } from "@/components/leaderboard/LeaderboardView";
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 interface ExamInfo {
   subjectSlug: string;
@@ -75,6 +78,8 @@ async function getLeaderboardData(): Promise<{
   entries: LeaderboardEntry[];
   isAvailable: boolean;
 }> {
+  noStore();
+
   if (!supabase) {
     return { entries: [], isAvailable: false };
   }
