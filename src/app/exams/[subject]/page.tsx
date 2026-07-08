@@ -31,9 +31,12 @@ export default async function ExamZonePage({ params }: ExamZonePageProps) {
     notFound();
   }
 
-  // Live-published exams are fetched server-side and merged with the mock
-  // catalog; any failure (Supabase unconfigured, network error, no rows)
-  // resolves to [] so the page still renders the mock catalog untouched.
+  // Live-published exams are fetched server-side, strictly filtered to
+  // this subject slug (DB-level .or(ilike...) + an application-level
+  // re-check inside getLiveExamsForSubject — see live-exams.ts), and
+  // merged with the mock catalog. Any failure (Supabase unconfigured,
+  // network error, no rows) resolves to [] so the page still renders the
+  // mock catalog untouched.
   const liveExams = await getLiveExamsForSubject(slug);
 
   return (
