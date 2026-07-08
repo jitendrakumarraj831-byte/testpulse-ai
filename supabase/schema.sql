@@ -38,6 +38,14 @@ create policy "Exams are publicly readable"
   on public.exams for select
   using (true);
 
+-- The admin AI question generator publishes new exams from the browser
+-- using the same anon/publishable key as everything else in this app (no
+-- separate admin-auth system yet), so an insert policy is required or
+-- RLS silently rejects every "Approve & Publish Test" click.
+create policy "Anyone can publish an exam"
+  on public.exams for insert
+  with check (true);
+
 -- Students may submit responses; responses are not publicly listable.
 create policy "Anyone can submit a student response"
   on public.student_responses for insert

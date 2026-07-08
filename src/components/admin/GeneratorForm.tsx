@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ChevronDown, Sparkles, Wand2 } from "lucide-react";
+import { ChevronDown, Loader2, Sparkles, Wand2 } from "lucide-react";
 import {
   DIFFICULTY_LEVELS,
   QUESTION_COUNT_OPTIONS,
@@ -21,6 +21,14 @@ interface GeneratorFormProps {
   onDifficultyChange: (value: DifficultyLevel) => void;
   onGenerate: () => void;
 }
+
+const SUBJECT_OPTIONS = [
+  "General Knowledge",
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Current Affairs",
+] as const;
 
 const DIFFICULTY_STYLES: Record<DifficultyLevel, string> = {
   Easy: "data-[active=true]:bg-emerald-500 data-[active=true]:text-slate-950 data-[active=true]:shadow-[0_0_20px_-4px_rgba(16,185,129,0.7)]",
@@ -64,17 +72,24 @@ export function GeneratorForm({
             htmlFor="subject"
             className="text-sm font-medium text-slate-300"
           >
-            Subject
+            Subject Category
           </label>
-          <input
-            id="subject"
-            type="text"
-            value={subject}
-            onChange={(event) => onSubjectChange(event.target.value)}
-            placeholder="e.g. Physics"
-            disabled={isGenerating}
-            className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-          />
+          <div className="relative mt-2">
+            <select
+              id="subject"
+              value={subject}
+              onChange={(event) => onSubjectChange(event.target.value)}
+              disabled={isGenerating}
+              className="w-full appearance-none rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {SUBJECT_OPTIONS.map((option) => (
+                <option key={option} value={option} className="bg-slate-900">
+                  {option}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          </div>
           {showValidation && !subject.trim() && (
             <p className="mt-1.5 text-xs text-rose-400">
               Subject is required.
@@ -154,10 +169,30 @@ export function GeneratorForm({
         disabled={isGenerating}
         whileHover={isGenerating ? undefined : { scale: 1.01 }}
         whileTap={isGenerating ? undefined : { scale: 0.98 }}
-        className="group mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-cyan-500 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-[0_0_30px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_40px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+        animate={
+          isGenerating
+            ? {
+                boxShadow: [
+                  "0 0 30px -6px rgba(6,182,212,0.8)",
+                  "0 0 50px -2px rgba(6,182,212,1)",
+                  "0 0 30px -6px rgba(6,182,212,0.8)",
+                ],
+              }
+            : { boxShadow: "0 0 30px -6px rgba(6,182,212,0.8)" }
+        }
+        transition={
+          isGenerating
+            ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.3 }
+        }
+        className="group mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-cyan-500 px-6 py-3.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-cyan-400 disabled:cursor-not-allowed"
       >
-        <Wand2 className="h-4 w-4" />
-        {isGenerating ? "Generating Exam…" : "Generate Exam via AI"}
+        {isGenerating ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Wand2 className="h-4 w-4" />
+        )}
+        {isGenerating ? "Generating Exam…" : "Generate Exam Paper via AI"}
       </motion.button>
     </section>
   );

@@ -93,3 +93,30 @@ export const SUBJECTS: Subject[] = [
 export function getSubjectBySlug(slug: string): Subject | undefined {
   return SUBJECTS.find((subject) => subject.slug === slug);
 }
+
+/** Neutral cyan styling for exams whose subject label doesn't match one of the four browsable SUBJECTS (e.g. an AI-generated exam published under "Physics" or "Chemistry"). */
+export const DEFAULT_ACCENT: SubjectAccent = {
+  iconBg: "bg-cyan-500/10 ring-1 ring-cyan-500/30",
+  iconText: "text-cyan-400",
+  hoverBorder: "group-hover:border-cyan-500/50",
+  hoverShadow: "group-hover:shadow-[0_0_45px_-10px_rgba(6,182,212,0.6)]",
+  chip: "bg-cyan-500/10 text-cyan-300 ring-1 ring-cyan-500/30",
+  activeRing: "border-cyan-500 shadow-[0_0_16px_-2px_rgba(6,182,212,0.8)]",
+};
+
+export interface SubjectMeta {
+  slug: string;
+  name: string;
+  accent: SubjectAccent;
+}
+
+/** Resolves a free-text subject label (as stored on a published `exams` row) against the known SUBJECTS catalog, falling back to a neutral slug/accent for labels outside it (e.g. "Physics" or "Chemistry" from the AI generator, which browses under the combined "Science" subject). */
+export function resolveSubjectMeta(subjectName: string): SubjectMeta {
+  const match = SUBJECTS.find(
+    (subject) => subject.name.toLowerCase() === subjectName.toLowerCase(),
+  );
+  if (match) {
+    return { slug: match.slug, name: match.name, accent: match.accent };
+  }
+  return { slug: "unknown", name: subjectName, accent: DEFAULT_ACCENT };
+}

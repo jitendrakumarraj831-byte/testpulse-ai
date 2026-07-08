@@ -177,6 +177,9 @@ export function TestWorkspace({
   const progressPercent = Math.round((answeredCount / questions.length) * 100);
   const isLowTime = secondsLeft > 0 && secondsLeft <= LOW_TIME_THRESHOLD_SECONDS;
   const isLocked = isSaving || showWarning || isDisqualified;
+  // AI-published exams whose subject label doesn't match a browsable
+  // SUBJECTS entry resolve to slug "unknown" — /exams/unknown would 404.
+  const examsHref = subjectSlug === "unknown" ? "/" : `/exams/${subjectSlug}`;
 
   const selectOption = (label: OptionLabel) => {
     if (isSubmitted || isLocked) return;
@@ -269,7 +272,7 @@ export function TestWorkspace({
                   Retake Test
                 </button>
                 <Link
-                  href={`/exams/${subjectSlug}`}
+                  href={examsHref}
                   className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)]"
                 >
                   Back to {subjectName} Exams
@@ -380,7 +383,7 @@ export function TestWorkspace({
                 {formatTime(secondsLeft)}
               </span>
               <Link
-                href={`/exams/${subjectSlug}`}
+                href={examsHref}
                 className="text-sm font-medium text-slate-500 transition-colors hover:text-cyan-400"
               >
                 Exit
