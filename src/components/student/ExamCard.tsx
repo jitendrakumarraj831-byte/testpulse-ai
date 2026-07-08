@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, ListChecks, Lock, PlayCircle } from "lucide-react";
+import { Clock, ListChecks, Lock, PlayCircle, Sparkles } from "lucide-react";
 import type { MockExam } from "@/lib/student/exams";
 import type { SubjectAccent } from "@/lib/student/subjects";
 
 interface ExamCardProps {
-  exam: MockExam;
+  exam: MockExam & { isLive?: boolean };
   accent: SubjectAccent;
 }
 
@@ -56,6 +56,12 @@ export function ExamCard({ exam, accent }: ExamCardProps) {
         >
           {exam.difficulty}
         </span>
+        {exam.isLive && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-300 ring-1 ring-cyan-500/30">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI Generated
+          </span>
+        )}
       </div>
 
       <div className="mt-auto pt-6">

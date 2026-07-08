@@ -1,8 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/utils/supabase/env";
 
 export const createClient = async (request: NextRequest) => {
   let supabaseResponse = NextResponse.next({
@@ -13,11 +11,11 @@ export const createClient = async (request: NextRequest) => {
 
   // Runs on every request via middleware — skip Supabase entirely rather
   // than crash the whole site if env vars aren't configured yet.
-  if (!supabaseUrl || !supabaseKey) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return supabaseResponse;
   }
 
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

@@ -123,6 +123,16 @@ export const MOCK_EXAMS: Record<string, MockExam[]> = {
   ],
 };
 
+/** AI-published exams don't store a duration, so estimate one from question count and difficulty, roughly matching the mock catalog's pacing. */
+export function estimateDurationMinutes(
+  questionCount: number,
+  difficulty: DifficultyLevel,
+): number {
+  const perQuestionMinutes =
+    difficulty === "Hard" ? 2 : difficulty === "Medium" ? 1.5 : 1;
+  return Math.max(10, Math.round(questionCount * perQuestionMinutes));
+}
+
 export interface ExamLookupResult {
   exam: MockExam;
   subjectSlug: string;

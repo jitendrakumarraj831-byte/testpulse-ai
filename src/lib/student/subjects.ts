@@ -110,13 +110,38 @@ export interface SubjectMeta {
   accent: SubjectAccent;
 }
 
-/** Resolves a free-text subject label (as stored on a published `exams` row) against the known SUBJECTS catalog, falling back to a neutral slug/accent for labels outside it (e.g. "Physics" or "Chemistry" from the AI generator, which browses under the combined "Science" subject). */
+/**
+ * Free-text subject labels (as stored on a published `exams.subject`
+ * column, or picked from the admin AI generator's dropdown) that belong
+ * under each browsable SUBJECTS slug. The generator offers "Physics" and
+ * "Chemistry" as distinct picks, but this app only browses a combined
+ * "Science" subject page, so both roll up into it there.
+ */
+const SUBJECT_LABEL_ALIASES: Record<string, string[]> = {
+  "general-knowledge": ["general knowledge"],
+  mathematics: ["mathematics"],
+  science: ["science", "physics", "chemistry"],
+  "current-affairs": ["current affairs"],
+};
+
+function findSlugForLabel(subjectName: string): string | undefined {
+  const normalized = subjectName.trim().toLowerCase();
+  return Object.entries(SUBJECT_LABEL_ALIASES).find(([, aliases]) =>
+    aliases.includes(normalized),
+  )?.[0];
+}
+
+/** Does this free-text subject label belong under the given browsable SUBJECTS slug? Used to filter live-published exams onto the right `/exams/[subject]` page. */
+export function matchesSubjectSlug(subjectName: string, slug: string): boolean {
+  return findSlugForLabel(subjectName) === slug;
+}
+
+/** Resolves a free-text subject label against the known SUBJECTS catalog (via the alias map above), falling back to a neutral slug/accent for labels outside it entirely. The original label is always preserved as the display name — a "Chemistry" exam keeps showing "Chemistry", it just inherits Science's slug/accent for routing and styling. */
 export function resolveSubjectMeta(subjectName: string): SubjectMeta {
-  const match = SUBJECTS.find(
-    (subject) => subject.name.toLowerCase() === subjectName.toLowerCase(),
-  );
-  if (match) {
-    return { slug: match.slug, name: match.name, accent: match.accent };
+  const slug = findSlugForLabel(subjectName);
+  const subject = slug ? getSubjectBySlug(slug) : undefined;
+  if (subject) {
+    return { slug: subject.slug, name: subjectName, accent: subject.accent };
   }
   return { slug: "unknown", name: subjectName, accent: DEFAULT_ACCENT };
 }

@@ -5,18 +5,25 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { getSubjectBySlug } from "@/lib/student/subjects";
 import { MOCK_EXAMS } from "@/lib/student/exams";
+import type { LiveExam } from "@/lib/student/live-exams";
 import { ExamCard } from "@/components/student/ExamCard";
 
 interface ExamZoneContentProps {
   subjectSlug: string;
+  liveExams?: LiveExam[];
 }
 
-export function ExamZoneContent({ subjectSlug }: ExamZoneContentProps) {
+export function ExamZoneContent({
+  subjectSlug,
+  liveExams = [],
+}: ExamZoneContentProps) {
   const subject = getSubjectBySlug(subjectSlug);
   if (!subject) return null;
 
   const Icon = subject.icon;
-  const exams = MOCK_EXAMS[subjectSlug] ?? [];
+  // Freshly admin-published exams surface first, ahead of the curated
+  // mock catalog that ships with the app.
+  const exams = [...liveExams, ...(MOCK_EXAMS[subjectSlug] ?? [])];
   const availableCount = exams.filter(
     (exam) => exam.status === "available",
   ).length;
