@@ -118,10 +118,10 @@ export interface SubjectMeta {
  * "Science" subject page, so both roll up into it there.
  */
 const SUBJECT_LABEL_ALIASES: Record<string, string[]> = {
-  "general-knowledge": ["general knowledge"],
-  mathematics: ["mathematics"],
+  "general-knowledge": ["general knowledge", "gk"],
+  mathematics: ["mathematics", "math", "maths"],
   science: ["science", "physics", "chemistry"],
-  "current-affairs": ["current affairs"],
+  "current-affairs": ["current affairs", "ca"],
 };
 
 function findSlugForLabel(subjectName: string): string | undefined {
@@ -131,9 +131,14 @@ function findSlugForLabel(subjectName: string): string | undefined {
   )?.[0];
 }
 
-/** Does this free-text subject label belong under the given browsable SUBJECTS slug? Used to filter live-published exams onto the right `/exams/[subject]` page. */
+/** Does this free-text subject label belong under the given browsable SUBJECTS slug? Used as a strict application-level guard after the DB-level filter in live-exams.ts, so a row can never render under the wrong subject page. Exact alias match only — never substring/fuzzy — so e.g. "Physics" can never accidentally match "general-knowledge". */
 export function matchesSubjectSlug(subjectName: string, slug: string): boolean {
   return findSlugForLabel(subjectName) === slug;
+}
+
+/** All accepted free-text subject labels/abbreviations for a browsable slug (e.g. "gk", "general knowledge" for general-knowledge), used to build a case-insensitive Supabase `.or(ilike...)` filter. Empty array for an unrecognized slug. */
+export function getSubjectLabelAliases(slug: string): string[] {
+  return SUBJECT_LABEL_ALIASES[slug] ?? [];
 }
 
 /** Resolves a free-text subject label against the known SUBJECTS catalog (via the alias map above), falling back to a neutral slug/accent for labels outside it entirely. The original label is always preserved as the display name — a "Chemistry" exam keeps showing "Chemistry", it just inherits Science's slug/accent for routing and styling. */
