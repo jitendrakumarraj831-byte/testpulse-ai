@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, PhoneCall } from "lucide-react";
+import { DemoRequestModal } from "@/components/landing/DemoRequestModal";
 
 interface PricingTier {
   name: string;
@@ -55,8 +57,15 @@ const PRICING_TIERS: PricingTier[] = [
 ];
 
 export function InstitutionPricing() {
+  const [modalPlan, setModalPlan] = useState<string | null>(null);
+
   return (
     <section id="pricing" className="px-6 py-24 lg:px-8">
+      <DemoRequestModal
+        isOpen={modalPlan !== null}
+        initialPlan={modalPlan ?? "Not sure yet"}
+        onClose={() => setModalPlan(null)}
+      />
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-cyan-400">
@@ -108,8 +117,9 @@ export function InstitutionPricing() {
                 ))}
               </ul>
 
-              <a
-                href="#contact-sales"
+              <button
+                type="button"
+                onClick={() => setModalPlan(tier.name)}
                 className={`group mt-8 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all ${
                   tier.featured
                     ? "bg-cyan-500 text-slate-950 shadow-[0_0_30px_-6px_rgba(6,182,212,0.8)] hover:bg-cyan-400 hover:shadow-[0_0_40px_-4px_rgba(6,182,212,0.9)]"
@@ -118,7 +128,7 @@ export function InstitutionPricing() {
               >
                 {tier.cta}
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </a>
+              </button>
             </motion.div>
           ))}
         </div>
@@ -142,12 +152,13 @@ export function InstitutionPricing() {
               Talk to our team for a walkthrough tailored to your batch size and workflow.
             </p>
           </div>
-          <a
-            href="mailto:sales@testpulse.ai"
+          <button
+            type="button"
+            onClick={() => setModalPlan("Not sure yet")}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_20px_-4px_rgba(6,182,212,0.7)] transition-all hover:bg-cyan-400"
           >
             Request Live Demo
-          </a>
+          </button>
         </motion.div>
       </div>
     </section>

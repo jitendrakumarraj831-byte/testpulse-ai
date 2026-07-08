@@ -75,3 +75,24 @@ grant select (id, exam_id, student_name, score, submitted_at)
   on public.student_responses to anon, authenticated;
 
 grant select on public.leaderboard_entries to anon, authenticated;
+
+-- Institution demo-request inquiries submitted from the homepage pricing
+-- section ("Request Live Demo" / "Talk to Sales" CTAs).
+create table if not exists public.demo_requests (
+  id uuid primary key default gen_random_uuid(),
+  institute_name text not null,
+  contact_name text not null,
+  email text not null,
+  phone text,
+  plan_interest text not null,
+  message text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.demo_requests enable row level security;
+
+-- Anyone can submit an inquiry; inquiries are not publicly listable
+-- (only readable via the service role / Supabase dashboard).
+create policy "Anyone can submit a demo request"
+  on public.demo_requests for insert
+  with check (true);
