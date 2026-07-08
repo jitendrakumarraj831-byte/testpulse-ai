@@ -39,7 +39,19 @@ function buildPrompt(
   count: number,
   difficulty: DifficultyLevel,
 ): string {
-  return `You are an expert exam question writer. Generate exactly ${count} multiple-choice questions about the topic "${topic}" within the subject "${subject}", calibrated to ${difficulty} difficulty.
+  return `You are an expert exam question writer creating authentic, textbook-quality multiple-choice questions for a competitive exam.
+
+Topic — the ONLY subject matter the questions are about: "${topic}"
+Category — a background classification label for filing this paper, NOT something to write questions about: "${subject}"
+Difficulty: ${difficulty}
+
+Generate exactly ${count} multiple-choice questions.
+
+THE STRICT RULE:
+- "${topic}" is the absolute and sole core theme of every question, option, and explanation. Write pure, authentic content on "${topic}" exactly as it would appear in a real textbook or competitive-exam paper dedicated to that topic.
+- "${subject}" exists only for internal classification. NEVER mention it, reference it, or work it into the question text, options, or explanation — do not write constructions like "${topic} within ${subject}", "${topic} as covered in ${subject}", "${topic} under ${subject}", or anything structurally similar. That pattern is forbidden.
+- If "${subject}" and "${topic}" seem mismatched (e.g. category "General Knowledge" paired with topic "Rotational Dynamics"), trust the topic completely and write real, substantive questions about it — ignore the category label entirely when writing content.
+- Use natural, standard textbook phrasing exactly as a real exam-paper author would write it. Never produce an artificial sentence that stitches the topic and category names together.
 
 Respond with ONLY valid JSON — no markdown, no code fences, no commentary — matching exactly this shape:
 {
@@ -59,7 +71,7 @@ Rules:
 - "id" is the 1-based question number.
 - "options" must contain exactly 4 distinct answer choices, written as plain text (no "A)" style prefixes).
 - "correctAnswer" is the letter for the correct option's position: A = options[0], B = options[1], C = options[2], D = options[3].
-- "explanation" briefly justifies why the correct answer is correct.
+- "explanation" briefly justifies why the correct answer is correct, using only "${topic}" terminology.
 - Do not include any text outside the JSON object.`;
 }
 
