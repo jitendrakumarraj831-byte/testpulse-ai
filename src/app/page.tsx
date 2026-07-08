@@ -1,5 +1,8 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
+import { WhiteLabelPreview } from "@/components/landing/WhiteLabelPreview";
+import { EnterpriseFeatures } from "@/components/landing/EnterpriseFeatures";
+import { InstitutionPricing } from "@/components/landing/InstitutionPricing";
 import { StudentHero } from "@/components/student/StudentHero";
 import { SubjectGrid } from "@/components/student/SubjectGrid";
 
@@ -10,6 +13,9 @@ export default function Home() {
       <main className="flex-1">
         <StudentHero />
         <SubjectGrid />
+        <WhiteLabelPreview />
+        <EnterpriseFeatures />
+        <InstitutionPricing />
       </main>
       <Footer />
     </div>

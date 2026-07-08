@@ -38,6 +38,14 @@ create policy "Exams are publicly readable"
   on public.exams for select
   using (true);
 
+-- The admin AI question generator publishes new exams from the browser
+-- using the same anon/publishable key as everything else in this app (no
+-- separate admin-auth system yet), so an insert policy is required or
+-- RLS silently rejects every "Approve & Publish Test" click.
+create policy "Anyone can publish an exam"
+  on public.exams for insert
+  with check (true);
+
 -- Students may submit responses; responses are not publicly listable.
 create policy "Anyone can submit a student response"
   on public.student_responses for insert
@@ -75,3 +83,24 @@ grant select (id, exam_id, student_name, score, submitted_at)
   on public.student_responses to anon, authenticated;
 
 grant select on public.leaderboard_entries to anon, authenticated;
+
+-- Institution demo-request inquiries submitted from the homepage pricing
+-- section ("Request Live Demo" / "Talk to Sales" CTAs).
+create table if not exists public.demo_requests (
+  id uuid primary key default gen_random_uuid(),
+  institute_name text not null,
+  contact_name text not null,
+  email text not null,
+  phone text,
+  plan_interest text not null,
+  message text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.demo_requests enable row level security;
+
+-- Anyone can submit an inquiry; inquiries are not publicly listable
+-- (only readable via the service role / Supabase dashboard).
+create policy "Anyone can submit a demo request"
+  on public.demo_requests for insert
+  with check (true);
