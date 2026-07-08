@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent, type MouseEvent } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
   Loader2,
   RotateCcw,
+  ShieldAlert,
   XCircle,
 } from "lucide-react";
 import type {
@@ -35,6 +37,9 @@ type SaveStatus = "idle" | "saved" | "error";
 
 const OPTION_LABELS: OptionLabel[] = ["A", "B", "C", "D"];
 const DEFAULT_STUDENT_NAME = "Guest Student";
+const MAX_INFRACTIONS = 3;
+const LOW_TIME_THRESHOLD_SECONDS = 2 * 60;
+const DISQUALIFY_REDIRECT_DELAY_MS = 2800;
 
 function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
@@ -52,6 +57,8 @@ export function TestWorkspace({
   questions,
   accent,
 }: TestWorkspaceProps) {
+  const router = useRouter();
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, OptionLabel>>({});
   const [studentName, setStudentName] = useState("");
@@ -60,6 +67,12 @@ export function TestWorkspace({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
   const [finalScore, setFinalScore] = useState(0);
+
+  // Anti-cheat engine state.
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showWarning, setShowWarning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isDisqualified, setIsDisqualified] = useState(false);
 
   const submitTest = async () => {
     if (isSaving || isSubmitted) return;
@@ -96,8 +109,10 @@ export function TestWorkspace({
   const submitTestRef = useRef(submitTest);
   submitTestRef.current = submitTest;
 
+  // Countdown timer — pauses while a tab-switch warning is showing or the
+  // student has already been disqualified/submitted.
   useEffect(() => {
-    if (isSubmitted || isSaving) return;
+    if (isSubmitted || isSaving || isPaused) return;
     const interval = setInterval(() => {
       setSecondsLeft((current) => {
         if (current <= 1) {
@@ -109,13 +124,62 @@ export function TestWorkspace({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSubmitted, isSaving]);
+  }, [isSubmitted, isSaving, isPaused]);
+
+  // Tab-switch / window-blur detection — each time the student navigates
+  // away from the exam tab, count an infraction.
+  useEffect(() => {
+    if (isSubmitted || isDisqualified) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchCount((count) => count + 1);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [isSubmitted, isDisqualified]);
+
+  // React to a new infraction: show the warning, or disqualify at the cap.
+  useEffect(() => {
+    if (tabSwitchCount === 0) return;
+
+    setIsPaused(true);
+    if (tabSwitchCount >= MAX_INFRACTIONS) {
+      setShowWarning(false);
+      setIsDisqualified(true);
+    } else {
+      setShowWarning(true);
+    }
+  }, [tabSwitchCount]);
+
+  // Force-submit and redirect once disqualified for repeated violations.
+  useEffect(() => {
+    if (!isDisqualified) return;
+
+    void submitTestRef.current();
+    const timeout = setTimeout(() => {
+      router.push("/leaderboard");
+    }, DISQUALIFY_REDIRECT_DELAY_MS);
+
+    return () => clearTimeout(timeout);
+  }, [isDisqualified, router]);
+
+  const resumeTest = () => {
+    setShowWarning(false);
+    setIsPaused(false);
+  };
 
   const currentQuestion = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
+  const progressPercent = Math.round((answeredCount / questions.length) * 100);
+  const isLowTime = secondsLeft > 0 && secondsLeft <= LOW_TIME_THRESHOLD_SECONDS;
+  const isLocked = isSaving || showWarning || isDisqualified;
 
   const selectOption = (label: OptionLabel) => {
-    if (isSubmitted || isSaving) return;
+    if (isSubmitted || isLocked) return;
     setAnswers((current) => ({ ...current, [currentQuestion.id]: label }));
   };
 
@@ -126,6 +190,19 @@ export function TestWorkspace({
     setIsSaving(false);
     setSaveStatus("idle");
     setSecondsLeft(durationMinutes * 60);
+    setTabSwitchCount(0);
+    setShowWarning(false);
+    setIsPaused(false);
+    setIsDisqualified(false);
+  };
+
+  // Anti-cheat: block copy/paste/cut and the right-click context menu
+  // while the student is actively taking the exam.
+  const blockClipboardEvent = (event: ClipboardEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+  const blockContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
   };
 
   if (isSubmitted) {
@@ -139,12 +216,18 @@ export function TestWorkspace({
             className="card-glow rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center backdrop-blur-md"
           >
             <span
-              className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ${accent.iconBg}`}
+              className={`mx-auto flex h-14 w-14 items-center justify-center rounded-2xl ${
+                isDisqualified ? "bg-rose-500/10" : accent.iconBg
+              }`}
             >
-              <CheckCircle2 className={`h-7 w-7 ${accent.iconText}`} />
+              {isDisqualified ? (
+                <ShieldAlert className="h-7 w-7 text-rose-400" />
+              ) : (
+                <CheckCircle2 className={`h-7 w-7 ${accent.iconText}`} />
+              )}
             </span>
             <h1 className="mt-5 text-2xl font-bold text-white sm:text-3xl">
-              Test Complete
+              {isDisqualified ? "Test Auto-Submitted" : "Test Complete"}
             </h1>
             <p className="mt-2 text-sm text-slate-400">{examTitle}</p>
             <p className="mt-6 text-4xl font-bold text-white">
@@ -154,13 +237,20 @@ export function TestWorkspace({
               {Math.round((finalScore / questions.length) * 100)}% correct
             </p>
 
-            {saveStatus === "saved" && (
+            {isDisqualified && (
+              <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-rose-400">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                Disqualified after {MAX_INFRACTIONS} proctoring violations —
+                redirecting to the leaderboard…
+              </p>
+            )}
+            {!isDisqualified && saveStatus === "saved" && (
               <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Saved to your progress history
               </p>
             )}
-            {saveStatus === "error" && (
+            {!isDisqualified && saveStatus === "error" && (
               <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-400">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 Your score was calculated, but this attempt couldn&apos;t be
@@ -168,117 +258,157 @@ export function TestWorkspace({
               </p>
             )}
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={handleRetake}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Retake Test
-              </button>
-              <Link
-                href={`/exams/${subjectSlug}`}
-                className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)]"
-              >
-                Back to {subjectName} Exams
-              </Link>
-            </div>
+            {!isDisqualified && (
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Retake Test
+                </button>
+                <Link
+                  href={`/exams/${subjectSlug}`}
+                  className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)]"
+                >
+                  Back to {subjectName} Exams
+                </Link>
+              </div>
+            )}
           </motion.div>
 
-          <div className="mt-8 space-y-4">
-            {questions.map((question, index) => {
-              const selected = answers[question.id];
-              const isCorrect = selected === question.correctAnswer;
+          {!isDisqualified && (
+            <div className="mt-8 space-y-4">
+              {questions.map((question, index) => {
+                const selected = answers[question.id];
+                const isCorrect = selected === question.correctAnswer;
 
-              return (
-                <div
-                  key={question.id}
-                  className="card-glow rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-300">
-                      Question {index + 1}: {question.question}
+                return (
+                  <div
+                    key={question.id}
+                    className="card-glow rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium text-slate-300">
+                        Question {index + 1}: {question.question}
+                      </p>
+                      {isCorrect ? (
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                      ) : (
+                        <XCircle className="h-5 w-5 shrink-0 text-rose-400" />
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      {question.options.map((optionText, optionIndex) => {
+                        const label = OPTION_LABELS[optionIndex];
+                        const isCorrectOption = label === question.correctAnswer;
+                        const isSelectedOption = label === selected;
+
+                        return (
+                          <div
+                            key={label}
+                            className={`rounded-lg border px-3 py-2 text-sm ${
+                              isCorrectOption
+                                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+                                : isSelectedOption
+                                  ? "border-rose-500/50 bg-rose-500/10 text-rose-300"
+                                  : "border-slate-700/80 bg-white/[0.03] text-slate-400"
+                            }`}
+                          >
+                            <span className="font-semibold">{label}.</span>{" "}
+                            {optionText}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                      {question.explanation}
                     </p>
-                    {isCorrect ? (
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-                    ) : (
-                      <XCircle className="h-5 w-5 shrink-0 text-rose-400" />
-                    )}
                   </div>
-
-                  <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    {question.options.map((optionText, optionIndex) => {
-                      const label = OPTION_LABELS[optionIndex];
-                      const isCorrectOption = label === question.correctAnswer;
-                      const isSelectedOption = label === selected;
-
-                      return (
-                        <div
-                          key={label}
-                          className={`rounded-lg border px-3 py-2 text-sm ${
-                            isCorrectOption
-                              ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
-                              : isSelectedOption
-                                ? "border-rose-500/50 bg-rose-500/10 text-rose-300"
-                                : "border-slate-700/80 bg-white/[0.03] text-slate-400"
-                          }`}
-                        >
-                          <span className="font-semibold">{label}.</span>{" "}
-                          {optionText}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                    {question.explanation}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 px-6 pb-32 pt-10 lg:px-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium text-slate-500">
-              {subjectName} &middot; {difficulty}
-            </p>
-            <h1 className="mt-1 text-xl font-semibold text-white sm:text-2xl">
-              {examTitle}
-            </h1>
+    <main
+      onCopy={blockClipboardEvent}
+      onCut={blockClipboardEvent}
+      onPaste={blockClipboardEvent}
+      onContextMenu={blockContextMenu}
+      className="flex-1 pb-32"
+    >
+      {/* Sticky proctored-exam header: subject, timer, progress bar. */}
+      <div className="sticky top-16 z-30 border-b border-slate-800 bg-slate-950/90 px-6 py-4 backdrop-blur-md lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium text-slate-500">
+                {subjectName} &middot; {difficulty}
+              </p>
+              <h1 className="mt-1 text-lg font-semibold text-white sm:text-xl">
+                {examTitle}
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={studentName}
+                onChange={(event) => setStudentName(event.target.value)}
+                placeholder={DEFAULT_STUDENT_NAME}
+                disabled={isSaving}
+                aria-label="Your name"
+                className="w-32 rounded-full border border-slate-700 bg-slate-900/70 px-3.5 py-2 text-xs text-white placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-40 sm:text-sm"
+              />
+              <span
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+                  isLowTime
+                    ? "animate-pulse border-rose-500/60 bg-rose-500/10 text-rose-300"
+                    : "border-slate-700 bg-slate-900/70 text-slate-300"
+                }`}
+              >
+                <Clock
+                  className={`h-4 w-4 ${isLowTime ? "text-rose-400" : "text-cyan-400"}`}
+                />
+                {formatTime(secondsLeft)}
+              </span>
+              <Link
+                href={`/exams/${subjectSlug}`}
+                className="text-sm font-medium text-slate-500 transition-colors hover:text-cyan-400"
+              >
+                Exit
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              value={studentName}
-              onChange={(event) => setStudentName(event.target.value)}
-              placeholder={DEFAULT_STUDENT_NAME}
-              disabled={isSaving}
-              aria-label="Your name"
-              className="w-32 rounded-full border border-slate-700 bg-slate-900/70 px-3.5 py-2 text-xs text-white placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-40 sm:text-sm"
-            />
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/70 px-4 py-2 text-sm font-medium text-slate-300">
-              <Clock className="h-4 w-4 text-cyan-400" />
-              {formatTime(secondsLeft)}
-            </span>
-            <Link
-              href={`/exams/${subjectSlug}`}
-              className="text-sm font-medium text-slate-500 transition-colors hover:text-cyan-400"
-            >
-              Exit
-            </Link>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>
+                {answeredCount} of {questions.length} answered
+              </span>
+              <span>{progressPercent}%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <motion.div
+                initial={false}
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400"
+              />
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mx-auto max-w-4xl px-6 pt-8 lg:px-8">
+        <div className="flex flex-wrap gap-2">
           {questions.map((question, index) => {
             const isCurrent = index === currentIndex;
             const isAnswered = answers[question.id] !== undefined;
@@ -288,7 +418,8 @@ export function TestWorkspace({
                 key={question.id}
                 type="button"
                 onClick={() => setCurrentIndex(index)}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors ${
+                disabled={isLocked}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   isCurrent
                     ? `${accent.activeRing} text-white`
                     : isAnswered
@@ -301,9 +432,6 @@ export function TestWorkspace({
             );
           })}
         </div>
-        <p className="mt-2 text-xs text-slate-500">
-          {answeredCount} of {questions.length} answered
-        </p>
 
         <motion.div
           key={currentQuestion.id}
@@ -319,7 +447,7 @@ export function TestWorkspace({
             {currentQuestion.question}
           </p>
 
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="mt-6 flex flex-col gap-3">
             {currentQuestion.options.map((optionText, optionIndex) => {
               const label = OPTION_LABELS[optionIndex];
               const isSelected = answers[currentQuestion.id] === label;
@@ -329,7 +457,8 @@ export function TestWorkspace({
                   key={label}
                   type="button"
                   onClick={() => selectOption(label)}
-                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
+                  disabled={isLocked}
+                  className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                     isSelected
                       ? "border-cyan-500/50 bg-cyan-500/10"
                       : "border-slate-700/80 bg-white/[0.03] hover:border-slate-600"
@@ -361,17 +490,17 @@ export function TestWorkspace({
           <button
             type="button"
             onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))}
-            disabled={currentIndex === 0 || isSaving}
+            disabled={currentIndex === 0 || isLocked}
             className="rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Previous
+            Previous Question
           </button>
 
           {currentIndex === questions.length - 1 ? (
             <button
               type="button"
               onClick={() => void submitTest()}
-              disabled={isSaving}
+              disabled={isLocked}
               className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSaving ? (
@@ -391,14 +520,94 @@ export function TestWorkspace({
                   Math.min(questions.length - 1, index + 1),
                 )
               }
-              disabled={isSaving}
+              disabled={isLocked}
               className="rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Next
+              Next Question
             </button>
           )}
         </div>
       </div>
+
+      {/* Anti-cheat: tab-switch warning modal (infractions 1 & 2 of 3). */}
+      <AnimatePresence>
+        {showWarning && !isDisqualified && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-rose-950/70 px-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-md rounded-2xl border border-rose-500/40 bg-slate-900/95 p-8 text-center shadow-[0_0_60px_-10px_rgba(244,63,94,0.6)] backdrop-blur-md"
+            >
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 ring-1 ring-rose-500/40">
+                <AlertTriangle className="h-7 w-7 text-rose-400" />
+              </span>
+              <h2 className="mt-5 text-xl font-bold text-white">
+                Warning: Tab Switch Detected!
+              </h2>
+              <p className="mt-2 text-2xl font-bold text-rose-400">
+                {tabSwitchCount}/{MAX_INFRACTIONS} Infractions
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                Leaving this tab or window during a proctored exam is flagged
+                as a violation. Your timer is paused. Reaching{" "}
+                {MAX_INFRACTIONS} infractions will automatically submit your
+                test.
+              </p>
+              <button
+                type="button"
+                onClick={resumeTest}
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-cyan-500 px-6 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400"
+              >
+                Resume Test
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Anti-cheat: disqualification overlay (3rd infraction). */}
+      <AnimatePresence>
+        {isDisqualified && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/95 px-4 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-md rounded-2xl border border-rose-500/40 bg-slate-900/95 p-8 text-center shadow-[0_0_60px_-10px_rgba(244,63,94,0.6)]"
+            >
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 ring-1 ring-rose-500/40">
+                <ShieldAlert className="h-7 w-7 text-rose-400" />
+              </span>
+              <h2 className="mt-5 text-xl font-bold text-white">
+                Test Auto-Submitted
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                You reached {MAX_INFRACTIONS} tab-switch infractions. Your
+                test has been submitted automatically to enforce exam
+                compliance.
+              </p>
+              <div className="mt-6 inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Redirecting to the leaderboard…
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
