@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Camera, CheckCircle2, Loader2, MessageCircle, Settings2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { DEFAULT_INSTITUTE_SETTINGS, type InstituteSettings } from "@/lib/admin/settings";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
@@ -40,6 +41,14 @@ const TOGGLES: ToggleDef[] = [
 ];
 
 export function SystemSettingsPanel() {
+  // Same fix as StudentDirectory: the admin-gated update policy on
+  // institute_settings needs the caller's real signed-in session, which
+  // lives in cookies, not the localStorage-backed `@/lib/supabase`
+  // singleton this component used before — that mismatch meant every
+  // toggle here silently updated zero rows while still showing "success"
+  // in the UI, since a zero-row RLS-filtered update isn't a Postgrest
+  // error on its own.
+  const supabase = useMemo(() => (isSupabaseConfigured ? createClient() : null), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -69,7 +78,7 @@ export function SystemSettingsPanel() {
           },
         });
       });
-  }, []);
+  }, [supabase]);
 
   const toggle = async (toggleDef: ToggleDef) => {
     if (state.status !== "ready" || !supabase || savingKey) return;

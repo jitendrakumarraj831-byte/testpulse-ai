@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Bot,
+  CalendarClock,
+  CheckSquare,
+  ClipboardList,
   GraduationCap,
   History,
   LayoutDashboard,
@@ -23,6 +26,9 @@ interface StudentNavItem {
 const STUDENT_NAV: StudentNavItem[] = [
   { key: "dashboard", label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
   { key: "exams", label: "Exam Arena", href: "/exams", icon: GraduationCap },
+  { key: "schedule", label: "Schedule", href: "/student/schedule", icon: CalendarClock },
+  { key: "assignments", label: "Assignments", href: "/student/assignments", icon: ClipboardList },
+  { key: "attendance", label: "Attendance", href: "/student/attendance", icon: CheckSquare },
   { key: "ai-guru", label: "AI Guru", href: "/ai-guru", icon: Bot },
   { key: "library", label: "Library", href: "/library", icon: Library },
   { key: "leaderboard", label: "Leaderboard", href: "/leaderboard", icon: Trophy },
