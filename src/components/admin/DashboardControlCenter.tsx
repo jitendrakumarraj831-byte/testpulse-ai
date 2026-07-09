@@ -10,6 +10,7 @@ import {
   Sparkles,
   Terminal,
   UploadCloud,
+  UserCog,
   Users,
   Wrench,
   type LucideIcon,
@@ -319,6 +320,13 @@ function QuickActions() {
       label: "AI Tools Hub",
       description: "Browse every tool",
       accent: "text-violet-400 bg-violet-500/10 ring-1 ring-violet-500/30",
+    },
+    {
+      href: "/admin/students",
+      icon: UserCog,
+      label: "Manage Students",
+      description: "View the student directory",
+      accent: "text-amber-400 bg-amber-500/10 ring-1 ring-amber-500/30",
     },
   ];
 

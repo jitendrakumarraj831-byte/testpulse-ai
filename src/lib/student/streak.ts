@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { resolveExamInfo } from "@/lib/student/exam-info";
+import { resolveExamInfo, type ExamInfo } from "@/lib/student/exam-info";
 
 const NAME_STORAGE_KEY = "testpulse:student-name";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -76,7 +76,7 @@ function buildBadges(
   ];
 }
 
-function emptySummary(): StreakSummary {
+export function emptyStreakSummary(): StreakSummary {
   return {
     currentStreak: 0,
     longestStreak: 0,
@@ -86,28 +86,25 @@ function emptySummary(): StreakSummary {
   };
 }
 
-/** Computes real streak/badge state from this student's actual Supabase submission
- * history, matched by name. Call from a useEffect — reads from the network. */
-export async function getStreakSummary(studentName: string): Promise<StreakSummary> {
-  const trimmedName = studentName.trim();
-  if (!supabase || !trimmedName) return emptySummary();
+export interface StreakSourceRow {
+  exam_id: string;
+  score: number | null;
+  submitted_at: string;
+}
 
-  const { data, error } = await supabase
-    .from("student_responses")
-    .select("exam_id, score, submitted_at")
-    .eq("student_name", trimmedName)
-    .order("submitted_at", { ascending: true })
-    .limit(500);
-
-  if (error || !data || data.length === 0) return emptySummary();
-
-  const examIds = [...new Set(data.map((row) => row.exam_id))];
-  const examInfo = await resolveExamInfo(examIds);
+/** Pure computation over a student's already-fetched submission rows — no
+ * network access, so it's safe to call in bulk (e.g. once per student in a
+ * directory view) without triggering an extra Supabase query per student. */
+export function computeStreakSummary(
+  rows: StreakSourceRow[],
+  examInfo: Record<string, ExamInfo>,
+): StreakSummary {
+  if (rows.length === 0) return emptyStreakSummary();
 
   const accuracies: number[] = [];
   const bestAccuracyByDay = new Map<string, number>();
 
-  for (const row of data) {
+  for (const row of rows) {
     const totalQuestions = examInfo[row.exam_id]?.totalQuestions ?? 0;
     if (totalQuestions <= 0) continue;
     const accuracy = Math.round((Number(row.score ?? 0) / totalQuestions) * 100);
@@ -116,7 +113,7 @@ export async function getStreakSummary(studentName: string): Promise<StreakSumma
     bestAccuracyByDay.set(day, Math.max(bestAccuracyByDay.get(day) ?? 0, accuracy));
   }
 
-  if (accuracies.length === 0) return emptySummary();
+  if (accuracies.length === 0) return emptyStreakSummary();
 
   const days = [...bestAccuracyByDay.keys()].sort();
 
@@ -136,7 +133,7 @@ export async function getStreakSummary(studentName: string): Promise<StreakSumma
   // A streak is still "live" if the most recent attempt was today or yesterday.
   const currentStreak = gapFromToday <= 1 ? runningStreak : 0;
 
-  const totalAttempts = data.length;
+  const totalAttempts = rows.length;
   const averageAccuracy = Math.round(
     accuracies.reduce((sum, value) => sum + value, 0) / accuracies.length,
   );
@@ -148,4 +145,25 @@ export async function getStreakSummary(studentName: string): Promise<StreakSumma
     averageAccuracy,
     badges: buildBadges(currentStreak, totalAttempts, averageAccuracy),
   };
+}
+
+/** Computes real streak/badge state from this student's actual Supabase submission
+ * history, matched by name. Call from a useEffect — reads from the network. */
+export async function getStreakSummary(studentName: string): Promise<StreakSummary> {
+  const trimmedName = studentName.trim();
+  if (!supabase || !trimmedName) return emptyStreakSummary();
+
+  const { data, error } = await supabase
+    .from("student_responses")
+    .select("exam_id, score, submitted_at")
+    .eq("student_name", trimmedName)
+    .order("submitted_at", { ascending: true })
+    .limit(500);
+
+  if (error || !data || data.length === 0) return emptyStreakSummary();
+
+  const examIds = [...new Set(data.map((row) => row.exam_id))];
+  const examInfo = await resolveExamInfo(examIds);
+
+  return computeStreakSummary(data, examInfo);
 }
