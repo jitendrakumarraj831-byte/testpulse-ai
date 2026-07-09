@@ -24,6 +24,7 @@ import type { StudentResponseInsert } from "@/lib/student/responses";
 import { createClient } from "@/utils/supabase/client";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 import { getStoredStudentName, rememberStudentName } from "@/lib/student/streak";
+import { getInstituteSettings } from "@/lib/admin/settings";
 import { PerformanceBreakdown } from "@/components/student/PerformanceBreakdown";
 
 interface TestWorkspaceProps {
@@ -66,23 +67,45 @@ export function TestWorkspace({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, OptionLabel>>({});
   const [studentName, setStudentName] = useState("");
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
   const [finalScore, setFinalScore] = useState(0);
 
-  // Anti-cheat engine state.
+  // Anti-cheat engine state. Defaults to on (matches institute_settings'
+  // own default) so there's no gap between mount and the settings fetch
+  // resolving where proctoring is silently off.
+  const [aiProctoringEnabled, setAiProctoringEnabled] = useState(true);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isDisqualified, setIsDisqualified] = useState(false);
 
+  useEffect(() => {
+    void getInstituteSettings().then((settings) => {
+      setAiProctoringEnabled(settings.aiProctoringEnabled);
+    });
+  }, []);
+
   // Prefill the name field from a prior visit, client-side only (avoids an
-  // SSR/hydration mismatch on the controlled input's value).
+  // SSR/hydration mismatch on the controlled input's value). If a session
+  // exists, the signed-in profile's name wins — it's the authoritative
+  // identity submissions should be tied to going forward.
   useEffect(() => {
     const stored = getStoredStudentName();
     if (stored) setStudentName(stored);
+
+    const client = createClient();
+    void client.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      setAuthUserId(user?.id ?? null);
+      const profileName = user?.user_metadata?.full_name;
+      if (typeof profileName === "string" && profileName.trim()) {
+        setStudentName(profileName.trim());
+      }
+    });
   }, []);
 
   const submitTest = async () => {
@@ -100,6 +123,7 @@ export function TestWorkspace({
       const payload: StudentResponseInsert = {
         exam_id: examId,
         student_name: studentName.trim() || DEFAULT_STUDENT_NAME,
+        student_id: authUserId,
         answers,
         score,
       };
@@ -140,9 +164,10 @@ export function TestWorkspace({
   }, [isSubmitted, isSaving, isPaused]);
 
   // Tab-switch / window-blur detection — each time the student navigates
-  // away from the exam tab, count an infraction.
+  // away from the exam tab, count an infraction. Skipped entirely when the
+  // admin has turned AI Proctoring off in System Settings.
   useEffect(() => {
-    if (isSubmitted || isDisqualified) return;
+    if (isSubmitted || isDisqualified || !aiProctoringEnabled) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -153,7 +178,7 @@ export function TestWorkspace({
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isSubmitted, isDisqualified]);
+  }, [isSubmitted, isDisqualified, aiProctoringEnabled]);
 
   // React to a new infraction: show the warning, or disqualify at the cap.
   useEffect(() => {
@@ -409,20 +434,32 @@ export function TestWorkspace({
             <CornerBrackets colorClass="text-rose-400/70" alwaysVisible />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
               <div className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 ring-1 ring-rose-500/30">
-                  <ShieldCheck className="h-4 w-4 text-rose-400" />
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    aiProctoringEnabled
+                      ? "bg-rose-500/10 ring-1 ring-rose-500/30"
+                      : "bg-slate-800 ring-1 ring-slate-700"
+                  }`}
+                >
+                  <ShieldCheck
+                    className={`h-4 w-4 ${aiProctoringEnabled ? "text-rose-400" : "text-slate-500"}`}
+                  />
                 </span>
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="text-xs font-semibold uppercase tracking-wide text-rose-300">
                       Proctoring
                     </p>
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-400" />
-                    </span>
+                    {aiProctoringEnabled && (
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-400" />
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm font-bold text-white">Active</p>
+                  <p className="text-sm font-bold text-white">
+                    {aiProctoringEnabled ? "Active" : "Off"}
+                  </p>
                 </div>
               </div>
 

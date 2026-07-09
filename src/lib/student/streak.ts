@@ -148,17 +148,26 @@ export function computeStreakSummary(
 }
 
 /** Computes real streak/badge state from this student's actual Supabase submission
- * history, matched by name. Call from a useEffect — reads from the network. */
-export async function getStreakSummary(studentName: string): Promise<StreakSummary> {
+ * history. Matched by `student_id` when a session exists (the reliable link
+ * to their account), falling back to name-matching for older anonymous rows
+ * or a logged-out visitor — same as the leaderboard's fallback. Call from a
+ * useEffect — reads from the network. */
+export async function getStreakSummary(
+  studentName: string,
+  studentId?: string | null,
+): Promise<StreakSummary> {
   const trimmedName = studentName.trim();
-  if (!supabase || !trimmedName) return emptyStreakSummary();
+  if (!supabase || (!studentId && !trimmedName)) return emptyStreakSummary();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("student_responses")
     .select("exam_id, score, submitted_at")
-    .eq("student_name", trimmedName)
     .order("submitted_at", { ascending: true })
     .limit(500);
+
+  const { data, error } = studentId
+    ? await query.eq("student_id", studentId)
+    : await query.eq("student_name", trimmedName);
 
   if (error || !data || data.length === 0) return emptyStreakSummary();
 

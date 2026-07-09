@@ -21,7 +21,7 @@ export function LoginForm() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -32,7 +32,21 @@ export function LoginForm() {
         return;
       }
 
-      const redirectTo = searchParams.get("redirect") || "/exams";
+      // An explicit redirect (e.g. bounced here from a gated /admin or
+      // /student route) always wins; otherwise route by role so an admin
+      // lands in the admin suite and a student lands on their dashboard.
+      const explicitRedirect = searchParams.get("redirect");
+      let redirectTo = explicitRedirect || "/student/dashboard";
+
+      if (!explicitRedirect && data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        redirectTo = profile?.role === "admin" ? "/admin/dashboard" : "/student/dashboard";
+      }
+
       router.push(redirectTo);
       router.refresh();
     } catch (error) {

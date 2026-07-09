@@ -7,6 +7,8 @@ export type StudentAnswers = Record<number, OptionLabel>;
 export interface StudentResponseInsert {
   exam_id: string;
   student_name: string;
+  /** The signed-in user's id, when a session exists — null for anonymous/logged-out submissions. */
+  student_id: string | null;
   answers: StudentAnswers;
   score: number;
 }

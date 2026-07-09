@@ -45,7 +45,10 @@ export const createClient = async (request: NextRequest) => {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (request.nextUrl.pathname.startsWith("/admin")) {
+  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
+  const isStudentRoute = request.nextUrl.pathname.startsWith("/student");
+
+  if (isAdminRoute || isStudentRoute) {
     // Any redirect below must carry forward the (possibly just-refreshed)
     // session cookies from supabaseResponse, or the user gets bounced into
     // a stale-session loop.
@@ -63,14 +66,19 @@ export const createClient = async (request: NextRequest) => {
       return redirectWithSessionCookies(loginUrl);
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+    // /student/* just requires a signed-in account (it shows the caller's
+    // own data) — the stricter admin-role check below only applies to
+    // /admin/*.
+    if (isAdminRoute) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    if (!profile || profile.role !== "admin") {
-      return redirectWithSessionCookies(new URL("/auth/unauthorized", request.url));
+      if (!profile || profile.role !== "admin") {
+        return redirectWithSessionCookies(new URL("/auth/unauthorized", request.url));
+      }
     }
   }
 

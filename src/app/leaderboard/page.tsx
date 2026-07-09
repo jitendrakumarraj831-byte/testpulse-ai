@@ -30,7 +30,7 @@ async function getLeaderboardData(): Promise<{
   try {
     const { data, error } = await supabase
       .from("leaderboard_entries")
-      .select("id, exam_id, student_name, score, submitted_at")
+      .select("id, exam_id, student_name, student_id, score, submitted_at")
       .order("submitted_at", { ascending: false })
       .limit(500);
 
@@ -45,6 +45,7 @@ async function getLeaderboardData(): Promise<{
       return {
         id: row.id,
         studentName: row.student_name,
+        studentId: row.student_id,
         subjectSlug: info?.subjectSlug ?? "unknown",
         subjectName: info?.subjectName ?? "Unknown",
         score: Number(row.score ?? 0),

@@ -42,8 +42,11 @@ export function RegisterForm() {
       }
 
       if (data.session) {
-        // Email confirmation is disabled on this Supabase project — signed in immediately.
-        router.push("/exams");
+        // Email confirmation is disabled on this Supabase project — signed
+        // in immediately. Registration always creates a student account
+        // (see handle_new_user in schema.sql), so the dashboard is the
+        // right landing spot.
+        router.push("/student/dashboard");
         router.refresh();
         return;
       }
