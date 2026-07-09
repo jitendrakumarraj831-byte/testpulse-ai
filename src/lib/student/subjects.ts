@@ -110,13 +110,34 @@ export interface SubjectMeta {
   accent: SubjectAccent;
 }
 
-/** Resolves a free-text subject label (as stored on a published `exams` row) against the known SUBJECTS catalog, falling back to a neutral slug/accent for labels outside it (e.g. "Physics" or "Chemistry" from the AI generator, which browses under the combined "Science" subject). */
+/** The admin AI generator's subject dropdown (`GeneratorForm.tsx`) offers
+ * "Physics" and "Chemistry" as separate options, not "Science" — but the
+ * browsable catalog only has one combined "Science" subject page. Without
+ * this alias table, `resolveSubjectMeta` fell through to the "unknown"
+ * bucket for every Physics/Chemistry exam, which meant a published exam
+ * under either label could never appear on `/exams/science` no matter what
+ * `getPublishedExamsForSubject` did — the mismatch was upstream of any
+ * filtering logic. */
+const SUBJECT_ALIASES: Record<string, string> = {
+  physics: "science",
+  chemistry: "science",
+  biology: "science",
+};
+
+/** Resolves a free-text subject label (as stored on a published `exams` row) against the known SUBJECTS catalog. Exact matches canonicalize casing; aliased labels (Physics/Chemistry/Biology) resolve to Science's slug/accent while keeping the original, more specific label as `name`; anything else falls back to a neutral slug/accent. */
 export function resolveSubjectMeta(subjectName: string): SubjectMeta {
-  const match = SUBJECTS.find(
-    (subject) => subject.name.toLowerCase() === subjectName.toLowerCase(),
-  );
-  if (match) {
-    return { slug: match.slug, name: match.name, accent: match.accent };
+  const normalized = subjectName.trim().toLowerCase();
+
+  const exactMatch = SUBJECTS.find((subject) => subject.name.toLowerCase() === normalized);
+  if (exactMatch) {
+    return { slug: exactMatch.slug, name: exactMatch.name, accent: exactMatch.accent };
   }
+
+  const aliasSlug = SUBJECT_ALIASES[normalized];
+  const aliasMatch = aliasSlug ? SUBJECTS.find((subject) => subject.slug === aliasSlug) : undefined;
+  if (aliasMatch) {
+    return { slug: aliasMatch.slug, name: subjectName, accent: aliasMatch.accent };
+  }
+
   return { slug: "unknown", name: subjectName, accent: DEFAULT_ACCENT };
 }

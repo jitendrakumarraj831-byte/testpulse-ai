@@ -4,6 +4,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { ExamZoneContent } from "@/components/student/ExamZoneContent";
 import { getSubjectBySlug } from "@/lib/student/subjects";
+import { getPublishedExamsForSubject } from "@/lib/student/published-exams";
 
 interface ExamZonePageProps {
   params: Promise<{ subject: string }>;
@@ -30,10 +31,12 @@ export default async function ExamZonePage({ params }: ExamZonePageProps) {
     notFound();
   }
 
+  const publishedExams = await getPublishedExamsForSubject(slug);
+
   return (
     <div className="glow-field flex min-h-screen flex-1 flex-col bg-slate-950">
       <Navbar />
-      <ExamZoneContent subjectSlug={slug} />
+      <ExamZoneContent subjectSlug={slug} publishedExams={publishedExams} />
       <Footer />
     </div>
   );
