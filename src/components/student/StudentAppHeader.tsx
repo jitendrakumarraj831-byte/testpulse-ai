@@ -7,6 +7,7 @@ import {
   GraduationCap,
   History,
   LayoutDashboard,
+  Library,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
@@ -21,6 +22,7 @@ interface StudentNavItem {
 const STUDENT_NAV: StudentNavItem[] = [
   { key: "dashboard", label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
   { key: "exams", label: "Exam Arena", href: "/exams", icon: GraduationCap },
+  { key: "library", label: "Library", href: "/library", icon: Library },
   { key: "leaderboard", label: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { key: "history", label: "History", href: "/student/history", icon: History },
 ];

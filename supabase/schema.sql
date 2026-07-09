@@ -334,3 +334,112 @@ create policy "Admins can update institute settings"
       where admin_check.id = auth.uid() and admin_check.role = 'admin'
     )
   );
+
+-- ============================================================
+-- Reading Room / Digital Library (Module 2.2)
+-- ============================================================
+-- `category` is the content type shown as filter tabs in the library UI
+-- (books, chapter notes, or curated premium catalogs); `access_level` is
+-- an orthogonal flag — a book or a notes packet can independently be
+-- free or premium.
+create table if not exists public.resources (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  category text not null check (category in ('book', 'notes', 'catalog')),
+  file_url text not null,
+  access_level text not null default 'free' check (access_level in ('free', 'premium')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists resources_category_idx on public.resources (category);
+
+alter table public.resources enable row level security;
+
+-- Deliberately NO public/authenticated select policy on the base table.
+-- Every resource's title/description/category is meant to be freely
+-- browsable (it's a catalog), but `file_url` for a premium resource is
+-- exactly the thing that must stay hidden from anyone who hasn't signed
+-- in — and a plain row policy can only hide whole rows, not mask one
+-- column conditionally per row. Browsing goes through the
+-- `library_catalog()` function below instead, which is `security
+-- definer` specifically so it CAN read every row's real `file_url` to
+-- decide what to return — same justification as `exam_question_stats`
+-- above. Admins get their own direct-table policies further down for
+-- managing entries.
+create policy "Admins can view all resource columns"
+  on public.resources for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can insert resources"
+  on public.resources for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update resources"
+  on public.resources for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete resources"
+  on public.resources for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- Public/student library catalog: every resource's metadata is always
+-- returned (so anon and signed-in visitors alike can browse and filter),
+-- but a premium resource's `file_url` is only included when the caller is
+-- signed in — there's no paid-tier/token system yet (that's Module 3.1's
+-- "Premium Content Lock"), so "signed in" is the interim gate, same
+-- posture the rest of this schema takes pre-3.1. A logged-out visitor
+-- still sees the premium card (title, description, "Premium" badge) so
+-- they know it exists, just without a usable link.
+create or replace function public.library_catalog()
+returns table (
+  id uuid,
+  title text,
+  description text,
+  category text,
+  access_level text,
+  file_url text,
+  created_at timestamptz
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select
+    r.id,
+    r.title,
+    r.description,
+    r.category,
+    r.access_level,
+    case
+      when r.access_level = 'free' then r.file_url
+      when auth.uid() is not null then r.file_url
+      else null
+    end as file_url,
+    r.created_at
+  from public.resources r
+  order by r.created_at desc;
+$$;
+
+grant execute on function public.library_catalog() to anon, authenticated;

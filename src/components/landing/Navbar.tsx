@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, Menu, Trophy, X } from "lucide-react";
+import { Activity, Library, Menu, Trophy, X } from "lucide-react";
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
@@ -58,6 +58,13 @@ export function Navbar() {
 
         <div className="hidden items-center gap-3 lg:flex">
           <Link
+            href="/library"
+            className="flex items-center gap-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400/50 hover:bg-cyan-500/20 hover:text-cyan-200"
+          >
+            <Library className="h-3.5 w-3.5" />
+            Library
+          </Link>
+          <Link
             href="/leaderboard"
             className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1.5 text-sm font-medium text-amber-300 transition-colors hover:border-amber-400/50 hover:bg-amber-500/20 hover:text-amber-200"
           >
@@ -106,6 +113,14 @@ export function Navbar() {
                 {link.label}
               </a>
             ))}
+            <Link
+              href="/library"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-cyan-300 hover:bg-white/5"
+            >
+              <Library className="h-4 w-4" />
+              Library
+            </Link>
             <Link
               href="/leaderboard"
               onClick={() => setIsMenuOpen(false)}
