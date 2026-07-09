@@ -12,6 +12,7 @@ import {
   Radar,
   type LucideIcon,
 } from "lucide-react";
+import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
 interface ModuleAccent {
   iconBg: string;
@@ -118,18 +119,6 @@ const PREMIUM_FEATURES: PremiumFeature[] = [
     },
   },
 ];
-
-function CornerBrackets({ colorClass }: { colorClass: string }) {
-  const shared = `pointer-events-none absolute h-4 w-4 ${colorClass} opacity-0 transition-opacity duration-300 group-hover:opacity-100`;
-  return (
-    <>
-      <span className={`${shared} top-3 left-3 border-t-2 border-l-2`} />
-      <span className={`${shared} top-3 right-3 border-t-2 border-r-2`} />
-      <span className={`${shared} bottom-3 left-3 border-b-2 border-l-2`} />
-      <span className={`${shared} bottom-3 right-3 border-b-2 border-r-2`} />
-    </>
-  );
-}
 
 export function CommandDeck() {
   const [enabled, setEnabled] = useState<Record<string, boolean>>({
