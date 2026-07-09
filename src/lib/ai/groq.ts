@@ -23,3 +23,33 @@ export async function callGroqJSON(
 
   return JSON.parse(text);
 }
+
+export interface GroqChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/** Calls Groq in free-text mode over a full conversation (for the AI Guru
+ * doubt-solver chat) and returns the assistant's reply text — unlike
+ * `callGroqJSON`, no `response_format` is set, since a chat reply is
+ * prose/markdown, not a structured payload. Throws on any failure. */
+export async function callGroqChat(
+  systemPrompt: string,
+  history: GroqChatMessage[],
+  apiKey: string,
+): Promise<string> {
+  const groq = new Groq({ apiKey });
+
+  const completion = await groq.chat.completions.create({
+    model: GROQ_MODEL,
+    messages: [{ role: "system", content: systemPrompt }, ...history],
+    temperature: 0.6,
+  });
+
+  const text = completion.choices[0]?.message?.content;
+  if (typeof text !== "string") {
+    throw new Error("Groq response did not contain any text content");
+  }
+
+  return text;
+}
