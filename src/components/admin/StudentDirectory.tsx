@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
@@ -13,7 +13,8 @@ import {
   UserMinus,
   UserCheck,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
 interface Student {
@@ -39,6 +40,14 @@ function formatDate(iso: string): string {
 }
 
 export function StudentDirectory() {
+  // The admin-gated RLS policies below (profiles read/update) need the
+  // caller's real signed-in session, which lives in cookies — the
+  // localStorage-backed `@/lib/supabase` singleton used elsewhere in this
+  // file's earlier version never carried it, so every request here would
+  // silently look "anonymous" to Postgres and RLS would filter everything
+  // out (an admin would just see an empty directory, and status toggles
+  // would appear to succeed in the UI without ever touching the database).
+  const supabase = useMemo(() => (isSupabaseConfigured ? createClient() : null), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [resetSentFor, setResetSentFor] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -78,7 +87,7 @@ export function StudentDirectory() {
     };
 
     void run();
-  }, []);
+  }, [supabase]);
 
   const updateStudent = (id: string, patch: Partial<Student>) => {
     setState((current) =>

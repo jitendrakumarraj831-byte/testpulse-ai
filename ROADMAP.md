@@ -15,6 +15,11 @@
 - [ ] 3.1 – **Premium Content Lock**: Embed a secure lock mechanism utilizing an `is_premium` flag on exams and documents, requiring validation tokens to unlock.
 - [ ] 3.2 – **B2B Tenant & Lead Tools**: Build management tables for onboarding third-party institutes and capturing active student registration data securely.
 
+## 🏫 MODULE 4: SCHOOL & COACHING MANAGEMENT SUITE
+- [x] 4.1 – **Student Academic Hub**: Schedule/timetable (with virtual-class join links), homework assignments with submission + grading, and admin-recorded attendance — both the admin management side and the student-facing views, backed by real Supabase tables and RLS.
+- [ ] 4.2 – **Fee Tracking & Receipts**: Manual fee ledger (admin records payments received) and receipt generation — no live payment gateway/online collection.
+- [ ] 4.3 – **Report Card Generation**: Aggregates exam scores, attendance, and assignment grades into a printable report per student.
+
 ---
 ### 🚨 STRICT OPERATIONAL DIRECTIVE FOR CLAUDE:
 1. Every module step must be written with 100% complete logic. No '// TODO' or 'add code here' comments allowed.

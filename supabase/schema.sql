@@ -443,3 +443,258 @@ as $$
 $$;
 
 grant execute on function public.library_catalog() to anon, authenticated;
+
+-- ============================================================
+-- Student Academic Hub (schedule/timetable, homework, attendance)
+-- ============================================================
+-- `batch` on all three tables below is an optional free-text filter — it
+-- mirrors `profiles.batch` (also free text, typed at signup), not a
+-- foreign key. A null batch means "everyone"; a set batch is matched
+-- client-side against the viewing student's own `profiles.batch`. This
+-- isn't a security boundary (every authenticated user can read every row
+-- regardless of batch — knowing another batch's timetable isn't
+-- sensitive), just a relevance filter, so it doesn't need to be enforced
+-- in RLS.
+
+create table if not exists public.class_schedule (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  subject text not null,
+  -- 'class' entries may carry a join_url — that's the whole "virtual
+  -- classes" feature: a scheduled class with an external Zoom/Meet/etc.
+  -- link, not in-app video conferencing.
+  event_type text not null default 'class' check (event_type in ('class', 'exam', 'event')),
+  batch text,
+  starts_at timestamptz not null,
+  ends_at timestamptz not null,
+  join_url text,
+  notes text not null default '',
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint class_schedule_ends_after_starts check (ends_at > starts_at)
+);
+
+create index if not exists class_schedule_starts_at_idx on public.class_schedule (starts_at);
+
+alter table public.class_schedule enable row level security;
+
+create policy "Signed-in users can view the schedule"
+  on public.class_schedule for select
+  using (auth.uid() is not null);
+
+create policy "Admins can insert schedule entries"
+  on public.class_schedule for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update schedule entries"
+  on public.class_schedule for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete schedule entries"
+  on public.class_schedule for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create table if not exists public.assignments (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  subject text not null,
+  batch text,
+  due_at timestamptz not null,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists assignments_due_at_idx on public.assignments (due_at);
+
+alter table public.assignments enable row level security;
+
+create policy "Signed-in users can view assignments"
+  on public.assignments for select
+  using (auth.uid() is not null);
+
+create policy "Admins can insert assignments"
+  on public.assignments for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update assignments"
+  on public.assignments for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete assignments"
+  on public.assignments for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- One row per student per assignment — `unique` makes a resubmission a
+-- plain `upsert` on (assignment_id, student_id) instead of needing a
+-- separate "delete my old submission first" step.
+create table if not exists public.assignment_submissions (
+  id uuid primary key default gen_random_uuid(),
+  assignment_id uuid not null references public.assignments (id) on delete cascade,
+  student_id uuid not null references auth.users (id) on delete cascade,
+  response_text text not null default '',
+  response_url text,
+  status text not null default 'submitted' check (status in ('submitted', 'graded')),
+  grade text,
+  feedback text,
+  submitted_at timestamptz not null default now(),
+  unique (assignment_id, student_id)
+);
+
+create index if not exists assignment_submissions_student_id_idx
+  on public.assignment_submissions (student_id);
+
+alter table public.assignment_submissions enable row level security;
+
+-- Students see and manage only their own submission; admins see every
+-- submission (needed to grade them).
+create policy "Students can view their own submissions"
+  on public.assignment_submissions for select
+  using (auth.uid() = student_id);
+
+create policy "Admins can view all submissions"
+  on public.assignment_submissions for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Students can submit their own work"
+  on public.assignment_submissions for insert
+  with check (auth.uid() = student_id);
+
+create policy "Students can update their own submission"
+  on public.assignment_submissions for update
+  using (auth.uid() = student_id);
+
+create policy "Admins can update any submission"
+  on public.assignment_submissions for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- Same privilege-escalation gap as profiles' self-update policy (see the
+-- comment above `protect_profile_privileged_columns`): "Students can
+-- update their own submission" has no WITH CHECK beyond auth.uid() =
+-- student_id, so without this trigger a student could set their own
+-- grade/feedback/status directly. Lets admins grade freely while blocking
+-- a student from touching those three columns on their own row.
+create or replace function public.protect_submission_grading_columns()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.grade is distinct from old.grade
+    or new.feedback is distinct from old.feedback
+    or new.status is distinct from old.status
+  then
+    if not exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    ) then
+      raise exception 'Only admins can set grade, feedback, or status.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_submission_grading_columns on public.assignment_submissions;
+create trigger protect_submission_grading_columns
+  before update on public.assignment_submissions
+  for each row execute function public.protect_submission_grading_columns();
+
+-- One row per student per day — admin-recorded only (no student
+-- insert/update policy at all: attendance a student could edit themselves
+-- wouldn't mean anything).
+create table if not exists public.attendance_records (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references auth.users (id) on delete cascade,
+  attendance_date date not null,
+  status text not null check (status in ('present', 'absent', 'late')),
+  batch text,
+  marked_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (student_id, attendance_date)
+);
+
+create index if not exists attendance_records_date_idx on public.attendance_records (attendance_date);
+
+alter table public.attendance_records enable row level security;
+
+create policy "Students can view their own attendance"
+  on public.attendance_records for select
+  using (auth.uid() = student_id);
+
+create policy "Admins can view all attendance"
+  on public.attendance_records for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can record attendance"
+  on public.attendance_records for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update attendance"
+  on public.attendance_records for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete attendance"
+  on public.attendance_records for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
