@@ -52,7 +52,7 @@ export function StudentAppHeader() {
           href="/"
           className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
         >
-          Exit to Site
+          Home
         </Link>
       </div>
 
