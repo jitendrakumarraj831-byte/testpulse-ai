@@ -32,6 +32,7 @@ export function AIGeneratorPanel() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishSource, setPublishSource] = useState<PublishExamResponse["source"] | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -108,6 +109,7 @@ export function AIGeneratorPanel() {
 
       const data: PublishExamResponse = await response.json();
       setPublishedUrl(data.url);
+      setPublishSource(data.source);
       setIsPublished(true);
     } catch (error) {
       console.error("Failed to publish exam:", error);
@@ -124,6 +126,7 @@ export function AIGeneratorPanel() {
     setQuestions([]);
     setIsPublished(false);
     setPublishedUrl(null);
+    setPublishSource(null);
     setPublishError(null);
   };
 
@@ -161,6 +164,7 @@ export function AIGeneratorPanel() {
               isPublishing={isPublishing}
               isPublished={isPublished}
               publishedUrl={publishedUrl}
+              publishSource={publishSource}
               publishError={publishError}
               onRegenerate={startGeneration}
               onPublish={handlePublish}

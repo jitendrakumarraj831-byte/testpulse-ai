@@ -6,10 +6,9 @@ import { motion } from "framer-motion";
 import { Activity, Bot, Library, Menu, Trophy, X } from "lucide-react";
 
 const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "For Institutes", href: "#institutes" },
-  { label: "Analytics", href: "#analytics" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Features", href: "/#features" },
+  { label: "For Institutes", href: "/#institutes" },
+  { label: "Pricing", href: "/#pricing" },
 ];
 
 export function Navbar() {
@@ -35,24 +34,24 @@ export function Navbar() {
       }`}
     >
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-        <a href="#top" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
             <Activity className="h-5 w-5 text-cyan-400" strokeWidth={2.25} />
           </span>
           <span className="text-lg font-semibold tracking-tight text-white">
             TestPulse <span className="text-cyan-400">AI</span>
           </span>
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-8 lg:flex">
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="text-sm font-medium text-slate-300 transition-colors hover:text-cyan-400"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -84,12 +83,12 @@ export function Navbar() {
           >
             Sign In
           </Link>
-          <a
-            href="#create-account"
+          <Link
+            href="/#pricing"
             className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_20px_-4px_rgba(6,182,212,0.7)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_28px_-2px_rgba(6,182,212,0.85)]"
           >
             Create Institute Account
-          </a>
+          </Link>
         </div>
 
         <button
@@ -111,14 +110,14 @@ export function Navbar() {
         <div className="border-t border-border bg-slate-950/95 backdrop-blur-lg lg:hidden">
           <div className="flex flex-col gap-1 px-6 py-4">
             {NAV_LINKS.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsMenuOpen(false)}
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-cyan-400"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             <Link
               href="/ai-guru"
@@ -144,13 +143,13 @@ export function Navbar() {
               <Trophy className="h-4 w-4" />
               Leaderboard
             </Link>
-            <a
-              href="#create-account"
+            <Link
+              href="/#pricing"
               onClick={() => setIsMenuOpen(false)}
               className="mt-2 rounded-full bg-cyan-500 px-4 py-2.5 text-center text-sm font-semibold text-slate-950 hover:bg-cyan-400"
             >
               Create Institute Account
-            </a>
+            </Link>
           </div>
         </div>
       )}

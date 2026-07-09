@@ -2,13 +2,14 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertTriangle,
   CheckCircle2,
   Link2,
   ListChecks,
   RefreshCcw,
   Rocket,
 } from "lucide-react";
-import type { GeneratedQuestion } from "@/lib/admin/question-generator";
+import type { GeneratedQuestion, PublishExamResponse } from "@/lib/admin/question-generator";
 import { QuestionCard } from "@/components/admin/QuestionCard";
 
 interface ResultsPanelProps {
@@ -16,6 +17,7 @@ interface ResultsPanelProps {
   isPublishing: boolean;
   isPublished: boolean;
   publishedUrl: string | null;
+  publishSource: PublishExamResponse["source"] | null;
   publishError: string | null;
   onRegenerate: () => void;
   onPublish: () => void;
@@ -27,6 +29,7 @@ export function ResultsPanel({
   isPublishing,
   isPublished,
   publishedUrl,
+  publishSource,
   publishError,
   onRegenerate,
   onPublish,
@@ -76,17 +79,35 @@ export function ResultsPanel({
               className="flex flex-wrap items-center justify-between gap-4"
             >
               <div>
-                <div className="flex items-center gap-2.5 text-sm font-medium text-emerald-400">
-                  <CheckCircle2 className="h-5 w-5" />
-                  Test published successfully — now live for students.
-                </div>
+                {publishSource === "simulated" ? (
+                  <div className="flex items-center gap-2.5 text-sm font-medium text-amber-400">
+                    <AlertTriangle className="h-5 w-5" />
+                    Not actually saved — Supabase isn&apos;t reachable right
+                    now, so this link won&apos;t work for students.
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5 text-sm font-medium text-emerald-400">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Test published successfully — now live for students.
+                  </div>
+                )}
                 <a
                   href={publishedUrl}
-                  className="mt-2 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-1.5 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400/60 hover:text-cyan-200"
+                  className={`mt-2 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                    publishSource === "simulated"
+                      ? "border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400/60 hover:text-amber-200"
+                      : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400/60 hover:text-cyan-200"
+                  }`}
                 >
                   <Link2 className="h-3.5 w-3.5" />
                   {publishedUrl}
                 </a>
+                {publishSource === "simulated" && (
+                  <p className="mt-2 max-w-md text-xs text-slate-500">
+                    Configure Supabase (or check your connection) and publish
+                    this batch again once it&apos;s reachable.
+                  </p>
+                )}
               </div>
               <button
                 type="button"

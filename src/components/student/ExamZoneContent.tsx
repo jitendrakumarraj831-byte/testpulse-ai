@@ -4,19 +4,24 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { getSubjectBySlug } from "@/lib/student/subjects";
-import { MOCK_EXAMS } from "@/lib/student/exams";
+import { MOCK_EXAMS, type MockExam } from "@/lib/student/exams";
 import { ExamCard } from "@/components/student/ExamCard";
 
 interface ExamZoneContentProps {
   subjectSlug: string;
+  /** Real exams published via the admin AI generator for this subject —
+   * fetched server-side in the page and merged in here so a freshly
+   * published exam is actually discoverable by browsing, not just
+   * reachable via a raw shared `/test/{id}` link. */
+  publishedExams: MockExam[];
 }
 
-export function ExamZoneContent({ subjectSlug }: ExamZoneContentProps) {
+export function ExamZoneContent({ subjectSlug, publishedExams }: ExamZoneContentProps) {
   const subject = getSubjectBySlug(subjectSlug);
   if (!subject) return null;
 
   const Icon = subject.icon;
-  const exams = MOCK_EXAMS[subjectSlug] ?? [];
+  const exams = [...(MOCK_EXAMS[subjectSlug] ?? []), ...publishedExams];
   const availableCount = exams.filter(
     (exam) => exam.status === "available",
   ).length;

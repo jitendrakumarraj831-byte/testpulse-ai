@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link2, Loader2, Rocket, Sparkles } from "lucide-react";
+import { AlertTriangle, Link2, Loader2, Rocket, Sparkles } from "lucide-react";
 import {
   DIFFICULTY_LEVELS,
   type ApiQuestion,
@@ -29,6 +29,7 @@ export function UploadQuestionsPanel() {
   const [isParsingAI, setIsParsingAI] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [publishSource, setPublishSource] = useState<PublishExamResponse["source"] | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
@@ -152,6 +153,7 @@ export function UploadQuestionsPanel() {
 
       const data: PublishExamResponse = await response.json();
       setPublishedUrl(data.url);
+      setPublishSource(data.source);
     } catch (error) {
       console.error("Failed to publish uploaded questions:", error);
       setErrorMessage(
@@ -166,6 +168,7 @@ export function UploadQuestionsPanel() {
     setRows([]);
     setRawText("");
     setPublishedUrl(null);
+    setPublishSource(null);
     setErrorMessage(null);
   };
 
@@ -278,12 +281,24 @@ export function UploadQuestionsPanel() {
           {publishedUrl ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-emerald-400">
-                  Published successfully.
-                </p>
+                {publishSource === "simulated" ? (
+                  <p className="flex items-center gap-2 text-sm font-medium text-amber-400">
+                    <AlertTriangle className="h-4 w-4" />
+                    Not actually saved — Supabase isn&apos;t reachable right
+                    now, so this link won&apos;t work for students.
+                  </p>
+                ) : (
+                  <p className="text-sm font-medium text-emerald-400">
+                    Published successfully.
+                  </p>
+                )}
                 <a
                   href={publishedUrl}
-                  className="mt-1 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-1.5 text-sm font-medium text-cyan-300 transition-colors hover:border-cyan-400/60 hover:text-cyan-200"
+                  className={`mt-1 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                    publishSource === "simulated"
+                      ? "border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400/60 hover:text-amber-200"
+                      : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:border-cyan-400/60 hover:text-cyan-200"
+                  }`}
                 >
                   <Link2 className="h-3.5 w-3.5" />
                   {publishedUrl}

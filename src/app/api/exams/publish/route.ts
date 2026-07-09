@@ -73,11 +73,13 @@ export async function POST(request: Request) {
     };
     return NextResponse.json(payload);
   } catch (error) {
-    console.error(
-      "[exams/publish] Supabase insert failed, simulating a successful publish:",
-      error,
-    );
+    console.error("[exams/publish] Supabase insert failed:", error);
     const id = randomUUID();
+    // `source: "simulated"` is a real, load-bearing signal — the caller
+    // (ResultsPanel) uses it to warn the admin this ID was never written to
+    // Supabase, so the /test/{id} link it hands out is a dead end for
+    // students. Silently returning 200-as-if-published here previously left
+    // admins with zero indication their exam wasn't actually saved.
     const payload: PublishExamResponse = {
       id,
       url: `/test/${id}`,

@@ -1,21 +1,22 @@
+import Link from "next/link";
 import { Activity } from "lucide-react";
 
 const FOOTER_LINKS = {
   Product: [
-    { label: "AI Exam Generator", href: "#features" },
-    { label: "White-Label Portal", href: "#features" },
-    { label: "Student Analytics", href: "#features" },
-    { label: "Live Mock Exams", href: "#features" },
+    { label: "AI Exam Generator", href: "/#features" },
+    { label: "White-Label Portal", href: "/#features" },
+    { label: "Student Analytics", href: "/#features" },
+    { label: "Live Mock Exams", href: "/exams" },
   ],
   Company: [
-    { label: "About", href: "#about" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "Contact Sales", href: "#contact" },
+    { label: "Pricing", href: "/#pricing" },
+    { label: "Contact Sales", href: "/#contact-sales" },
   ],
   Resources: [
-    { label: "Demo Quiz", href: "#demo-quiz" },
-    { label: "Institute Onboarding", href: "#create-account" },
-    { label: "Help Center", href: "#help" },
+    { label: "Demo Quiz", href: "/exams" },
+    { label: "Digital Library", href: "/library" },
+    { label: "AI Guru", href: "/ai-guru" },
+    { label: "Institute Onboarding", href: "/#pricing" },
   ],
 };
 
@@ -25,14 +26,14 @@ export function Footer() {
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <a href="#top" className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
                 <Activity className="h-4 w-4 text-cyan-400" strokeWidth={2.25} />
               </span>
               <span className="text-base font-semibold text-white">
                 TestPulse <span className="text-cyan-400">AI</span>
               </span>
-            </a>
+            </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-500">
               The AI exam engine built for coaching institutes and educators
               who need speed, scale, and their own brand on top.
@@ -47,12 +48,12 @@ export function Footer() {
               <ul className="mt-4 space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="text-sm text-slate-500 transition-colors hover:text-cyan-400"
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -65,20 +66,6 @@ export function Footer() {
             &copy; {new Date().getFullYear()} TestPulse AI. All rights
             reserved.
           </p>
-          <div className="flex gap-6">
-            <a
-              href="#privacy"
-              className="text-xs text-slate-600 transition-colors hover:text-cyan-400"
-            >
-              Privacy Policy
-            </a>
-            <a
-              href="#terms"
-              className="text-xs text-slate-600 transition-colors hover:text-cyan-400"
-            >
-              Terms of Service
-            </a>
-          </div>
         </div>
       </div>
     </footer>

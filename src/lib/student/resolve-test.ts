@@ -24,7 +24,7 @@ export interface ResolvedTest {
 }
 
 /** AI-published exams don't store a duration, so estimate one from question count and difficulty, roughly matching the mock catalog's pacing. */
-function estimateDurationMinutes(
+export function estimateDurationMinutes(
   questionCount: number,
   difficulty: DifficultyLevel,
 ): number {
