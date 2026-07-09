@@ -6,7 +6,7 @@
 - [x] 1.3 – Isolate Layout Shells completely (AdminShell vs StudentAppHeader) so no shared layouts leak.
 
 ## 🎓 MODULE 2: COMPREHENSIVE HOMEPAGE REFACTOR & STUDENT CORE (Current Phase)
-- [x] 2.1 – **Unified Dynamic Homepage (`/src/app/page.tsx`)**: Fully refactor the root page. If logged out, render the landing page. If logged in as Student, render their complete Dashboard grid directly. If logged in as Admin, render the System Control Center. *Must be fully wired with real state and zero placeholders.*
+- [x] 2.1 – **Unified Dynamic Homepage (`/src/app/page.tsx`)**: Strict two-entry-point login gateway for logged-out visitors (Student Login / Admin Login, no marketing content mixed in — that moved to `/product`). A signed-in student's home shows their schedule, outstanding homework, consistency streak, and Exam Arena access; a signed-in admin's home shows the fee ledger, today's attendance, student directory, and exam deployment controls. *Fully wired with real state and zero placeholders.*
 - [x] 2.2 – **Reading Room & Digital Library (`/src/app/library`)**: Build a complete interface with subcategories for books, chapter notes, and premium catalogs, connected directly to a Supabase resource schema.
 - [x] 2.3 – **AI Doubt Solver (`/src/app/ai-guru`)**: Create a complete, stylized chat workspace connected to an LLM endpoint for 24/7 student academic queries.
 - [ ] 2.4 – **Gamified Reward Vault**: Fully write the logic tracking student consistency streaks and milestones to award redeemable utility points.
@@ -17,7 +17,7 @@
 
 ## 🏫 MODULE 4: SCHOOL & COACHING MANAGEMENT SUITE
 - [x] 4.1 – **Student Academic Hub**: Schedule/timetable (with virtual-class join links), homework assignments with submission + grading, and admin-recorded attendance — both the admin management side and the student-facing views, backed by real Supabase tables and RLS.
-- [ ] 4.2 – **Fee Tracking & Receipts**: Manual fee ledger (admin records payments received) and receipt generation — no live payment gateway/online collection.
+- [x] 4.2 – **Fee Tracking & Receipts**: Manual fee ledger (admin records payments received) and receipt generation — no live payment gateway/online collection.
 - [ ] 4.3 – **Report Card Generation**: Aggregates exam scores, attendance, and assignment grades into a printable report per student.
 
 ---
