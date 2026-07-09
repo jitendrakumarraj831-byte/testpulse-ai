@@ -23,6 +23,8 @@ import type { SubjectAccent } from "@/lib/student/subjects";
 import type { StudentResponseInsert } from "@/lib/student/responses";
 import { createClient } from "@/utils/supabase/client";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
+import { getStoredStudentName, rememberStudentName } from "@/lib/student/streak";
+import { PerformanceBreakdown } from "@/components/student/PerformanceBreakdown";
 
 interface TestWorkspaceProps {
   examId: string;
@@ -76,6 +78,13 @@ export function TestWorkspace({
   const [isPaused, setIsPaused] = useState(false);
   const [isDisqualified, setIsDisqualified] = useState(false);
 
+  // Prefill the name field from a prior visit, client-side only (avoids an
+  // SSR/hydration mismatch on the controlled input's value).
+  useEffect(() => {
+    const stored = getStoredStudentName();
+    if (stored) setStudentName(stored);
+  }, []);
+
   const submitTest = async () => {
     if (isSaving || isSubmitted) return;
     setIsSaving(true);
@@ -83,6 +92,8 @@ export function TestWorkspace({
     const score = questions.filter(
       (question) => answers[question.id] === question.correctAnswer,
     ).length;
+
+    rememberStudentName(studentName.trim() || DEFAULT_STUDENT_NAME);
 
     try {
       const supabase = createClient();
@@ -282,6 +293,16 @@ export function TestWorkspace({
               </div>
             )}
           </motion.div>
+
+          {!isDisqualified && (
+            <PerformanceBreakdown
+              subjectName={subjectName}
+              examTitle={examTitle}
+              score={finalScore}
+              questions={questions}
+              answers={answers}
+            />
+          )}
 
           {!isDisqualified && (
             <div className="mt-8 space-y-4">

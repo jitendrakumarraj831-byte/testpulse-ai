@@ -104,3 +104,48 @@ alter table public.demo_requests enable row level security;
 create policy "Anyone can submit a demo request"
   on public.demo_requests for insert
   with check (true);
+
+-- Optional, additive: powers the admin "Exam Insights" hardest-question
+-- stat. student_responses.answers is deliberately locked down from
+-- anon/authenticated (see the revoke above) so no individual student's
+-- answers ever reach the browser — this function is `security definer`
+-- specifically so it CAN read `answers` server-side, but it only ever
+-- returns aggregated counts/percentages per question, never a raw
+-- per-student answer, so it doesn't reopen that privacy boundary.
+-- Safe to run at any time; the admin UI works without it too (it falls
+-- back to a coarser topic-level estimate if this function isn't present).
+create or replace function public.exam_question_stats(target_exam_id uuid)
+returns table (
+  question_id integer,
+  question_text text,
+  attempt_count bigint,
+  miss_count bigint,
+  miss_rate_percent numeric
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select
+    (q->>'id')::integer as question_id,
+    q->>'question' as question_text,
+    count(sr.id) as attempt_count,
+    count(sr.id) filter (
+      where (sr.answers ->> (q->>'id')) is distinct from (q->>'correctAnswer')
+    ) as miss_count,
+    round(
+      100.0 * count(sr.id) filter (
+        where (sr.answers ->> (q->>'id')) is distinct from (q->>'correctAnswer')
+      ) / nullif(count(sr.id), 0)
+    ) as miss_rate_percent
+  from public.exams e
+  cross join lateral jsonb_array_elements(e.questions) as q
+  left join public.student_responses sr
+    on sr.exam_id = e.id::text
+  where e.id = target_exam_id
+  group by q
+  order by miss_rate_percent desc nulls last;
+$$;
+
+grant execute on function public.exam_question_stats(uuid) to anon, authenticated;

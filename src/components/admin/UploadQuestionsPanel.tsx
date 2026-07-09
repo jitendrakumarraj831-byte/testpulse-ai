@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  ClipboardPaste,
-  Link2,
-  Loader2,
-  Rocket,
-  Sparkles,
-} from "lucide-react";
+import { Link2, Loader2, Rocket, Sparkles } from "lucide-react";
 import {
   DIFFICULTY_LEVELS,
   type ApiQuestion,
@@ -22,6 +16,7 @@ import {
 import { parseSpreadsheetFile } from "@/lib/admin/file-parser";
 import { QuestionDropZone } from "@/components/admin/QuestionDropZone";
 import { QuestionValidationTable } from "@/components/admin/QuestionValidationTable";
+import { AITextParserPanel } from "@/components/admin/AITextParserPanel";
 
 export function UploadQuestionsPanel() {
   const [subject, setSubject] = useState("");
@@ -252,46 +247,20 @@ export function UploadQuestionsPanel() {
         </div>
       </section>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <QuestionDropZone isProcessing={isParsingFile} onFile={handleFile} />
+      <div className="mt-6">
+        <AITextParserPanel
+          rawText={rawText}
+          onRawTextChange={setRawText}
+          onParse={() => void handleParseWithAI()}
+          isParsing={isParsingAI}
+        />
+      </div>
 
-        <div className="card-glow flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md">
-          <label
-            htmlFor="raw-text"
-            className="flex items-center gap-2 text-sm font-medium text-slate-300"
-          >
-            <ClipboardPaste className="h-4 w-4 text-cyan-400" />
-            Paste raw question text
-          </label>
-          <textarea
-            id="raw-text"
-            value={rawText}
-            onChange={(event) => setRawText(event.target.value)}
-            disabled={isParsingAI}
-            placeholder={`1. What is the capital of France?\nA) London\nB) Paris\nC) Berlin\nD) Madrid\nAnswer: B`}
-            className="mt-3 min-h-32 flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-          />
-          <motion.button
-            type="button"
-            onClick={() => void handleParseWithAI()}
-            disabled={isParsingAI}
-            whileHover={isParsingAI ? undefined : { scale: 1.01 }}
-            whileTap={isParsingAI ? undefined : { scale: 0.98 }}
-            className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_35px_-4px_rgba(6,182,212,0.95)] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isParsingAI ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Parsing with AI…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Parse with AI
-              </>
-            )}
-          </motion.button>
-        </div>
+      <div className="mt-6">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-600">
+          Or import a spreadsheet instead
+        </p>
+        <QuestionDropZone isProcessing={isParsingFile} onFile={handleFile} />
       </div>
 
       {errorMessage && (
