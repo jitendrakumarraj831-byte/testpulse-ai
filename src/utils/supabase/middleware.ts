@@ -66,19 +66,28 @@ export const createClient = async (request: NextRequest) => {
       return redirectWithSessionCookies(loginUrl);
     }
 
-    // /student/* just requires a signed-in account (it shows the caller's
-    // own data) — the stricter admin-role check below only applies to
-    // /admin/*.
-    if (isAdminRoute) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
+    // Fetched once and reused below — both the suspension gate (applies to
+    // /admin/* and /student/*) and the admin-role gate (admin-only) need it.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, status")
+      .eq("id", user.id)
+      .maybeSingle();
 
-      if (!profile || profile.role !== "admin") {
-        return redirectWithSessionCookies(new URL("/auth/unauthorized", request.url));
-      }
+    // A suspended account (admin toggles this off StudentDirectory) must
+    // lose access to every gated route immediately on its next navigation —
+    // otherwise "Suspend" is cosmetic. Checked before the role gate so a
+    // suspended admin is bounced too, not just suspended students.
+    if (profile?.status === "suspended") {
+      return redirectWithSessionCookies(new URL("/auth/suspended", request.url));
+    }
+
+    // /student/* just requires a signed-in, non-suspended account (it shows
+    // the caller's own data) — the stricter admin-role check below only
+    // applies to /admin/*. `profile.role !== "admin"` also covers a missing
+    // profile row or any unexpected role value, not just role === "student".
+    if (isAdminRoute && (!profile || profile.role !== "admin")) {
+      return redirectWithSessionCookies(new URL("/auth/unauthorized", request.url));
     }
   }
 
