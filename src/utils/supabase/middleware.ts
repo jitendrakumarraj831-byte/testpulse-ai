@@ -41,7 +41,38 @@ export const createClient = async (request: NextRequest) => {
   });
 
   // Required to actually refresh the session cookie — do not remove.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    // Any redirect below must carry forward the (possibly just-refreshed)
+    // session cookies from supabaseResponse, or the user gets bounced into
+    // a stale-session loop.
+    const redirectWithSessionCookies = (url: URL) => {
+      const redirectResponse = NextResponse.redirect(url);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value);
+      });
+      return redirectResponse;
+    };
+
+    if (!user) {
+      const loginUrl = new URL("/auth/login", request.url);
+      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+      return redirectWithSessionCookies(loginUrl);
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile || profile.role !== "admin") {
+      return redirectWithSessionCookies(new URL("/auth/unauthorized", request.url));
+    }
+  }
 
   return supabaseResponse;
 };

@@ -149,3 +149,84 @@ as $$
 $$;
 
 grant execute on function public.exam_question_stats(uuid) to anon, authenticated;
+
+-- ============================================================
+-- Student/teacher accounts (Supabase Auth + role-gated profiles)
+-- ============================================================
+-- Run this block once to enable real accounts, /auth/register,
+-- /auth/login, and the authenticated /admin/* gate. Nothing above this
+-- section depends on it — the app keeps working with anonymous
+-- name-based submissions either way.
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  email text not null default '',
+  full_name text not null default '',
+  batch text,
+  role text not null default 'student' check (role in ('student', 'admin')),
+  status text not null default 'active' check (status in ('active', 'suspended')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+-- Every signed-in user can see and edit their own profile row.
+create policy "Users can view their own profile"
+  on public.profiles for select
+  using (auth.uid() = id);
+
+create policy "Users can update their own profile"
+  on public.profiles for update
+  using (auth.uid() = id);
+
+-- Admins can see and manage every profile. The subquery checks the
+-- CALLER's own row (admin_check.id = auth.uid()), which the policy above
+-- already makes visible to them — so this does not recurse into itself,
+-- it's the standard Supabase role-check idiom.
+create policy "Admins can view all profiles"
+  on public.profiles for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update any profile"
+  on public.profiles for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- Auto-creates a profile row (role always defaults to 'student' — there is
+-- deliberately no public path to becoming an admin) the moment someone
+-- completes Supabase Auth sign-up.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name, batch)
+  values (
+    new.id,
+    coalesce(new.email, ''),
+    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    new.raw_user_meta_data ->> 'batch'
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- One-time manual step — run this yourself after your first real signup.
+-- There is intentionally no self-service or API path to grant admin:
+--   update public.profiles set role = 'admin' where email = 'you@example.com';

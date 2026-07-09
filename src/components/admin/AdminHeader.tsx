@@ -6,12 +6,13 @@ import {
   LayoutDashboard,
   Sparkles,
   UploadCloud,
+  UserCog,
   Wrench,
 } from "lucide-react";
 
 interface AdminHeaderProps {
   activeLabel?: string;
-  activePage?: "dashboard" | "ai-tools" | "generator" | "uploader";
+  activePage?: "dashboard" | "ai-tools" | "generator" | "uploader" | "students";
 }
 
 const ADMIN_TABS = [
@@ -39,27 +40,36 @@ const ADMIN_TABS = [
     href: "/admin/upload-questions",
     icon: UploadCloud,
   },
+  {
+    key: "students" as const,
+    label: "Manage Students",
+    href: "/admin/students",
+    icon: UserCog,
+  },
 ];
 
 export function AdminHeader({
   activeLabel = "AI Question Generator",
   activePage,
 }: AdminHeaderProps) {
-  // Dashboard is the root of the admin section; AI Tools is a section under
-  // it; the generator/uploader pages are leaves under AI Tools. The
-  // breadcrumb reflects that real hierarchy instead of always chaining
-  // through all three (which repeated "Dashboard" on the Dashboard page
-  // itself).
+  // Dashboard is the root of the admin section. AI Tools and Manage
+  // Students are both sections directly under it (siblings, not nested in
+  // each other); the generator/uploader pages are leaves under AI Tools.
+  // The breadcrumb reflects that real hierarchy instead of always chaining
+  // through a fixed 3-level path (which repeated "Dashboard" on the
+  // Dashboard page itself, and would wrongly nest Students under AI Tools).
   const breadcrumbSegments: { label: string; href?: string }[] =
     activePage === "dashboard"
       ? [{ label: "Dashboard" }]
       : activePage === "ai-tools"
         ? [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "AI Tools" }]
-        : [
-            { label: "Dashboard", href: "/admin/dashboard" },
-            { label: "AI Tools", href: "/admin/ai-tools" },
-            { label: activeLabel },
-          ];
+        : activePage === "students"
+          ? [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Manage Students" }]
+          : [
+              { label: "Dashboard", href: "/admin/dashboard" },
+              { label: "AI Tools", href: "/admin/ai-tools" },
+              { label: activeLabel },
+            ];
 
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg">
