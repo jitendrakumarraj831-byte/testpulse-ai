@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import {
   Activity,
@@ -44,6 +45,22 @@ export function AdminHeader({
   activeLabel = "AI Question Generator",
   activePage,
 }: AdminHeaderProps) {
+  // Dashboard is the root of the admin section; AI Tools is a section under
+  // it; the generator/uploader pages are leaves under AI Tools. The
+  // breadcrumb reflects that real hierarchy instead of always chaining
+  // through all three (which repeated "Dashboard" on the Dashboard page
+  // itself).
+  const breadcrumbSegments: { label: string; href?: string }[] =
+    activePage === "dashboard"
+      ? [{ label: "Dashboard" }]
+      : activePage === "ai-tools"
+        ? [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "AI Tools" }]
+        : [
+            { label: "Dashboard", href: "/admin/dashboard" },
+            { label: "AI Tools", href: "/admin/ai-tools" },
+            { label: activeLabel },
+          ];
+
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
@@ -100,19 +117,19 @@ export function AdminHeader({
       </div>
 
       <div className="mx-auto flex max-w-6xl items-center gap-2 border-t border-slate-800/60 px-6 py-3 text-sm text-slate-500 lg:px-8">
-        <Link
-          href="/admin/dashboard"
-          className="flex items-center gap-2 transition-colors hover:text-cyan-400"
-        >
-          <LayoutDashboard className="h-4 w-4" />
-          Dashboard
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <Link href="/admin/ai-tools" className="transition-colors hover:text-cyan-400">
-          AI Tools
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="font-medium text-cyan-400">{activeLabel}</span>
+        <LayoutDashboard className="h-4 w-4" />
+        {breadcrumbSegments.map((segment, index) => (
+          <Fragment key={segment.label}>
+            {index > 0 && <ChevronRight className="h-3.5 w-3.5" />}
+            {segment.href ? (
+              <Link href={segment.href} className="transition-colors hover:text-cyan-400">
+                {segment.label}
+              </Link>
+            ) : (
+              <span className="font-medium text-cyan-400">{segment.label}</span>
+            )}
+          </Fragment>
+        ))}
       </div>
     </header>
   );
