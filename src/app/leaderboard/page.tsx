@@ -5,8 +5,7 @@ import { Footer } from "@/components/landing/Footer";
 import { LeaderboardView } from "@/components/leaderboard/LeaderboardView";
 import { supabase } from "@/lib/supabase";
 import type { LeaderboardEntry } from "@/lib/student/leaderboard";
-import { getExamById } from "@/lib/student/exams";
-import { getSubjectBySlug, SUBJECTS } from "@/lib/student/subjects";
+import { resolveExamInfo } from "@/lib/student/exam-info";
 
 export const metadata: Metadata = {
   title: "Leaderboard | TestPulse AI",
@@ -17,62 +16,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
-
-interface ExamInfo {
-  subjectSlug: string;
-  subjectName: string;
-  totalQuestions: number;
-}
-
-/** Resolves subject + question-count metadata for a batch of exam_ids, checking the hardcoded mock catalog first and falling back to a real `exams` row lookup for anything unresolved (e.g. AI-generated exams published via the uploader). */
-async function resolveExamInfo(
-  examIds: string[],
-): Promise<Record<string, ExamInfo>> {
-  const resolved: Record<string, ExamInfo> = {};
-  const unresolved: string[] = [];
-
-  for (const examId of examIds) {
-    const lookup = getExamById(examId);
-    if (lookup) {
-      const subject = getSubjectBySlug(lookup.subjectSlug);
-      resolved[examId] = {
-        subjectSlug: lookup.subjectSlug,
-        subjectName: subject?.name ?? lookup.subjectSlug,
-        totalQuestions: lookup.exam.questionCount,
-      };
-    } else {
-      unresolved.push(examId);
-    }
-  }
-
-  if (unresolved.length > 0 && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from("exams")
-        .select("id, subject, questions")
-        .in("id", unresolved);
-
-      if (error) throw error;
-
-      for (const row of data ?? []) {
-        const subjectSlug =
-          SUBJECTS.find(
-            (candidate) =>
-              candidate.name.toLowerCase() === String(row.subject).toLowerCase(),
-          )?.slug ?? "unknown";
-        resolved[row.id] = {
-          subjectSlug,
-          subjectName: row.subject,
-          totalQuestions: Array.isArray(row.questions) ? row.questions.length : 0,
-        };
-      }
-    } catch (error) {
-      console.error("[leaderboard] Failed to resolve published exams:", error);
-    }
-  }
-
-  return resolved;
-}
 
 async function getLeaderboardData(): Promise<{
   entries: LeaderboardEntry[];

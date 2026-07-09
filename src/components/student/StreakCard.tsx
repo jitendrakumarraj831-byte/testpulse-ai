@@ -3,7 +3,11 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Crown, Flame, Footprints, Target, type LucideIcon } from "lucide-react";
-import { getStreakSummary, type StreakSummary } from "@/lib/student/streak";
+import {
+  getStoredStudentName,
+  getStreakSummary,
+  type StreakSummary,
+} from "@/lib/student/streak";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
 const BADGE_ICONS: Record<string, LucideIcon> = {
@@ -12,20 +16,58 @@ const BADGE_ICONS: Record<string, LucideIcon> = {
   "accuracy-master": Target,
 };
 
+type LoadState =
+  | { status: "no-name" }
+  | { status: "loading" }
+  | { status: "ready"; name: string; summary: StreakSummary };
+
 export function StreakCard() {
-  const [summary, setSummary] = useState<StreakSummary | null>(null);
+  const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
-    setSummary(getStreakSummary());
+    const name = getStoredStudentName().trim();
+    if (!name) {
+      setState({ status: "no-name" });
+      return;
+    }
+    setState({ status: "loading" });
+    void getStreakSummary(name).then((summary) => {
+      setState({ status: "ready", name, summary });
+    });
   }, []);
 
-  if (!summary) {
+  if (state.status === "no-name") {
+    return (
+      <div className="card-glow relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md sm:p-8">
+        <div className="flex items-center gap-4">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 ring-1 ring-amber-500/30">
+            <Flame className="h-8 w-8 text-amber-400" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-amber-300">
+              Your Streak
+            </p>
+            <p className="mt-1 text-sm font-medium text-white">
+              Take your first test to start a streak
+            </p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Enter your name on any test and it&apos;ll be remembered here.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state.status === "loading") {
     return (
       <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md sm:p-8">
         <div className="h-16 w-48 animate-pulse rounded-lg bg-slate-800/70" />
       </div>
     );
   }
+
+  const { name, summary } = state;
 
   return (
     <motion.div
@@ -53,8 +95,8 @@ export function StreakCard() {
             </p>
             <p className="mt-1 text-xs text-slate-500">
               Longest streak {summary.longestStreak} &middot;{" "}
-              {summary.totalAttempts} test{summary.totalAttempts === 1 ? "" : "s"} on
-              this device
+              {summary.totalAttempts} test{summary.totalAttempts === 1 ? "" : "s"}{" "}
+              submitted as &ldquo;{name}&rdquo;
             </p>
           </div>
         </div>

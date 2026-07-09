@@ -32,7 +32,7 @@ interface Breakdown {
 
 function buildShareText(examTitle: string, breakdown: Breakdown): string {
   return [
-    `${examTitle} — Strength & Weakness Breakdown`,
+    `${examTitle} — Strength & Weakness Matrix`,
     "",
     breakdown.summary,
     "",
@@ -157,7 +157,9 @@ export function PerformanceBreakdown({
         </span>
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-cyan-300">
-            {breakdown.source === "ai" ? "AI Performance Breakdown" : "Performance Breakdown"}
+            {breakdown.source === "ai"
+              ? "AI Strength & Weakness Matrix"
+              : "Strength & Weakness Matrix"}
           </p>
           <p className="mt-0.5 text-sm text-slate-400">{breakdown.summary}</p>
         </div>

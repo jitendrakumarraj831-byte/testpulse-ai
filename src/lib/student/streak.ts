@@ -1,11 +1,8 @@
-const STORAGE_KEY = "testpulse:quiz-history";
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+import { supabase } from "@/lib/supabase";
+import { resolveExamInfo } from "@/lib/student/exam-info";
 
-interface HistoryEntry {
-  /** UTC calendar day, "YYYY-MM-DD". */
-  date: string;
-  accuracy: number;
-}
+const NAME_STORAGE_KEY = "testpulse:student-name";
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface StreakBadge {
   id: string;
@@ -22,53 +19,34 @@ export interface StreakSummary {
   badges: StreakBadge[];
 }
 
+/** The name typed into the exam name field, remembered locally so a returning
+ * student's real Supabase submission history can be looked back up by name —
+ * there's no auth yet, so this is name-scoped, not account-scoped (same
+ * caveat the public leaderboard already carries). */
+export function getStoredStudentName(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(NAME_STORAGE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function rememberStudentName(name: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(NAME_STORAGE_KEY, name);
+  } catch {
+    // localStorage unavailable — the name field just won't be remembered next visit.
+  }
+}
+
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
 function daysBetween(from: string, to: string): number {
   return Math.round((new Date(to).getTime() - new Date(from).getTime()) / MS_PER_DAY);
-}
-
-function readHistory(): HistoryEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as HistoryEntry[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeHistory(entries: HistoryEntry[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  } catch {
-    // localStorage unavailable (private browsing, quota exceeded) — streak
-    // tracking just degrades silently, it's not load-bearing for the exam itself.
-  }
-}
-
-/** Records this device's completion of a test. Call once per graded submission. */
-export function recordQuizCompletion(score: number, totalQuestions: number): void {
-  if (totalQuestions <= 0) return;
-  const accuracy = Math.round((score / totalQuestions) * 100);
-  const history = readHistory();
-  const today = todayKey();
-  const todayIndex = history.findIndex((entry) => entry.date === today);
-
-  if (todayIndex >= 0) {
-    history[todayIndex] = {
-      date: today,
-      accuracy: Math.max(history[todayIndex].accuracy, accuracy),
-    };
-  } else {
-    history.push({ date: today, accuracy });
-  }
-  writeHistory(history);
 }
 
 function buildBadges(
@@ -98,24 +76,54 @@ function buildBadges(
   ];
 }
 
-/** Reads this device's local quiz history and derives streak/badge state. Client-only — call from a useEffect. */
-export function getStreakSummary(): StreakSummary {
-  const history = [...readHistory()].sort((a, b) => a.date.localeCompare(b.date));
+function emptySummary(): StreakSummary {
+  return {
+    currentStreak: 0,
+    longestStreak: 0,
+    totalAttempts: 0,
+    averageAccuracy: 0,
+    badges: buildBadges(0, 0, 0),
+  };
+}
 
-  if (history.length === 0) {
-    return {
-      currentStreak: 0,
-      longestStreak: 0,
-      totalAttempts: 0,
-      averageAccuracy: 0,
-      badges: buildBadges(0, 0, 0),
-    };
+/** Computes real streak/badge state from this student's actual Supabase submission
+ * history, matched by name. Call from a useEffect — reads from the network. */
+export async function getStreakSummary(studentName: string): Promise<StreakSummary> {
+  const trimmedName = studentName.trim();
+  if (!supabase || !trimmedName) return emptySummary();
+
+  const { data, error } = await supabase
+    .from("student_responses")
+    .select("exam_id, score, submitted_at")
+    .eq("student_name", trimmedName)
+    .order("submitted_at", { ascending: true })
+    .limit(500);
+
+  if (error || !data || data.length === 0) return emptySummary();
+
+  const examIds = [...new Set(data.map((row) => row.exam_id))];
+  const examInfo = await resolveExamInfo(examIds);
+
+  const accuracies: number[] = [];
+  const bestAccuracyByDay = new Map<string, number>();
+
+  for (const row of data) {
+    const totalQuestions = examInfo[row.exam_id]?.totalQuestions ?? 0;
+    if (totalQuestions <= 0) continue;
+    const accuracy = Math.round((Number(row.score ?? 0) / totalQuestions) * 100);
+    accuracies.push(accuracy);
+    const day = row.submitted_at.slice(0, 10);
+    bestAccuracyByDay.set(day, Math.max(bestAccuracyByDay.get(day) ?? 0, accuracy));
   }
+
+  if (accuracies.length === 0) return emptySummary();
+
+  const days = [...bestAccuracyByDay.keys()].sort();
 
   let longestStreak = 1;
   let runningStreak = 1;
-  for (let i = 1; i < history.length; i += 1) {
-    const gap = daysBetween(history[i - 1].date, history[i].date);
+  for (let i = 1; i < days.length; i += 1) {
+    const gap = daysBetween(days[i - 1], days[i]);
     if (gap === 1) {
       runningStreak += 1;
     } else if (gap > 1) {
@@ -124,14 +132,13 @@ export function getStreakSummary(): StreakSummary {
     longestStreak = Math.max(longestStreak, runningStreak);
   }
 
-  const lastEntry = history[history.length - 1];
-  const gapFromToday = daysBetween(lastEntry.date, todayKey());
+  const gapFromToday = daysBetween(days[days.length - 1], todayKey());
   // A streak is still "live" if the most recent attempt was today or yesterday.
   const currentStreak = gapFromToday <= 1 ? runningStreak : 0;
 
-  const totalAttempts = history.length;
+  const totalAttempts = data.length;
   const averageAccuracy = Math.round(
-    history.reduce((sum, entry) => sum + entry.accuracy, 0) / totalAttempts,
+    accuracies.reduce((sum, value) => sum + value, 0) / accuracies.length,
   );
 
   return {

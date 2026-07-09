@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import {
   mapApiQuestionToGenerated,
@@ -17,8 +18,11 @@ import { ResultsPanel } from "@/components/admin/ResultsPanel";
 type Phase = "idle" | "generating" | "results";
 
 export function AIGeneratorPanel() {
-  const [subject, setSubject] = useState("Physics");
-  const [topic, setTopic] = useState("Rotational Dynamics");
+  const searchParams = useSearchParams();
+  const [subject, setSubject] = useState(searchParams.get("subject") || "Physics");
+  const [topic, setTopic] = useState(
+    searchParams.get("topic") || "Rotational Dynamics",
+  );
   const [totalQuestions, setTotalQuestions] = useState(10);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>("Medium");
 
