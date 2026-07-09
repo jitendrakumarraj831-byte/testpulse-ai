@@ -114,7 +114,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             href="/"
             className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
           >
-            Exit to Site
+            Home
           </Link>
         </div>
       </aside>
@@ -134,7 +134,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               href="/"
               className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
             >
-              Exit
+              Home
             </Link>
           </div>
           <div className="flex gap-1 overflow-x-auto px-4">
