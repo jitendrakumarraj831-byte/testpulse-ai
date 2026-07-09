@@ -5,14 +5,27 @@ import {
   LayoutDashboard,
   Sparkles,
   UploadCloud,
+  Wrench,
 } from "lucide-react";
 
 interface AdminHeaderProps {
   activeLabel?: string;
-  activePage?: "generator" | "uploader";
+  activePage?: "dashboard" | "ai-tools" | "generator" | "uploader";
 }
 
 const ADMIN_TABS = [
+  {
+    key: "dashboard" as const,
+    label: "Dashboard",
+    href: "/admin/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    key: "ai-tools" as const,
+    label: "AI Tools",
+    href: "/admin/ai-tools",
+    icon: Wrench,
+  },
   {
     key: "generator" as const,
     label: "AI Generator",
@@ -66,14 +79,14 @@ export function AdminHeader({
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl gap-1 px-4 lg:px-6">
+      <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 lg:px-6">
         {ADMIN_TABS.map((tab) => {
           const isActive = tab.key === activePage;
           return (
             <Link
               key={tab.key}
               href={tab.href}
-              className={`inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
                 isActive
                   ? "border-cyan-400 text-cyan-300"
                   : "border-transparent text-slate-500 hover:text-slate-300"
@@ -87,10 +100,17 @@ export function AdminHeader({
       </div>
 
       <div className="mx-auto flex max-w-6xl items-center gap-2 border-t border-slate-800/60 px-6 py-3 text-sm text-slate-500 lg:px-8">
-        <LayoutDashboard className="h-4 w-4" />
-        <span>Dashboard</span>
+        <Link
+          href="/admin/dashboard"
+          className="flex items-center gap-2 transition-colors hover:text-cyan-400"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Dashboard
+        </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span>AI Tools</span>
+        <Link href="/admin/ai-tools" className="transition-colors hover:text-cyan-400">
+          AI Tools
+        </Link>
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="font-medium text-cyan-400">{activeLabel}</span>
       </div>

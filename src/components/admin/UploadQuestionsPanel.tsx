@@ -247,7 +247,7 @@ export function UploadQuestionsPanel() {
         </div>
       </section>
 
-      <div className="mt-6">
+      <div id="ai-text-parser" className="mt-6 scroll-mt-6">
         <AITextParserPanel
           rawText={rawText}
           onRawTextChange={setRawText}
