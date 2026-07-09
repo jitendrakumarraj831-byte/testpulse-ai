@@ -64,12 +64,12 @@ export function Navbar() {
             <Trophy className="h-3.5 w-3.5" />
             Leaderboard
           </Link>
-          <a
-            href="#login"
+          <Link
+            href="/auth/login"
             className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
           >
             Sign In
-          </a>
+          </Link>
           <a
             href="#create-account"
             className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_20px_-4px_rgba(6,182,212,0.7)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_28px_-2px_rgba(6,182,212,0.85)]"
