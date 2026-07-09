@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminHeader } from "@/components/admin/AdminHeader";
 import { UploadQuestionsPanel } from "@/components/admin/UploadQuestionsPanel";
 
 export const metadata: Metadata = {
@@ -9,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function UploadQuestionsPage() {
-  return (
-    <div className="glow-field min-h-screen bg-slate-950">
-      <AdminHeader activeLabel="Upload Questions" activePage="uploader" />
-      <UploadQuestionsPanel />
-    </div>
-  );
+  return <UploadQuestionsPanel />;
 }

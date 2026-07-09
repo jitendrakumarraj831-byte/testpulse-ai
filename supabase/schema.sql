@@ -259,3 +259,40 @@ create or replace view public.leaderboard_entries
 with (security_invoker = true) as
 select id, exam_id, student_name, student_id, score, submitted_at
 from public.student_responses;
+
+-- ============================================================
+-- Institute-wide feature settings (Enterprise Admin Suite)
+-- ============================================================
+-- A single settings row every admin shares — "System Settings" toggles
+-- like AI Proctoring apply platform-wide, not per-admin, so this is
+-- intentionally a singleton (enforced by the fixed id) rather than a
+-- per-user preferences table.
+create table if not exists public.institute_settings (
+  id boolean primary key default true check (id),
+  ai_proctoring_enabled boolean not null default true,
+  whatsapp_reports_enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.institute_settings (id)
+values (true)
+on conflict (id) do nothing;
+
+alter table public.institute_settings enable row level security;
+
+-- Readable by anyone — the anonymous exam workspace (TestWorkspace) needs
+-- ai_proctoring_enabled to decide whether to run its anti-cheat engine,
+-- and there's no per-student sensitivity in these two flags.
+create policy "Institute settings are publicly readable"
+  on public.institute_settings for select
+  using (true);
+
+-- Only admins may change them (same admin-check idiom as the profiles policies).
+create policy "Admins can update institute settings"
+  on public.institute_settings for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );

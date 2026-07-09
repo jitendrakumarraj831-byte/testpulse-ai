@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AdminHeader } from "@/components/admin/AdminHeader";
 import { StudentDirectory } from "@/components/admin/StudentDirectory";
 
 export const metadata: Metadata = {
@@ -9,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ManageStudentsPage() {
-  return (
-    <div className="glow-field min-h-screen bg-slate-950">
-      <AdminHeader activeLabel="Manage Students" activePage="students" />
-      <StudentDirectory />
-    </div>
-  );
+  return <StudentDirectory />;
 }
