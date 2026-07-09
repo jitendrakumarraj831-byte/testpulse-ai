@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  Bot,
   GraduationCap,
   History,
   LayoutDashboard,
@@ -22,6 +23,7 @@ interface StudentNavItem {
 const STUDENT_NAV: StudentNavItem[] = [
   { key: "dashboard", label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
   { key: "exams", label: "Exam Arena", href: "/exams", icon: GraduationCap },
+  { key: "ai-guru", label: "AI Guru", href: "/ai-guru", icon: Bot },
   { key: "library", label: "Library", href: "/library", icon: Library },
   { key: "leaderboard", label: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { key: "history", label: "History", href: "/student/history", icon: History },
