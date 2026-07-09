@@ -35,83 +35,89 @@ export interface GenerationParams {
   difficulty: DifficultyLevel;
 }
 
+/**
+ * Generates purely topic-driven filler content — `subject` is
+ * intentionally not a parameter here. It's a background classification
+ * label only; mixing it into question/option/explanation text produces
+ * nonsensical phrasing like "Rotational Dynamics within General
+ * Knowledge" when a teacher pairs an unrelated topic with a subject.
+ */
 interface TemplateVariant {
-  buildPrompt: (topic: string, subject: string) => string;
-  buildOptions: (topic: string, subject: string) => string[];
-  buildExplanation: (topic: string, subject: string) => string;
+  buildPrompt: (topic: string) => string;
+  buildOptions: (topic: string) => string[];
+  buildExplanation: (topic: string) => string;
 }
 
 const EASY_VARIANTS: TemplateVariant[] = [
   {
-    buildPrompt: (topic, subject) =>
-      `Which of the following best defines ${topic} as covered in ${subject}?`,
-    buildOptions: (topic, subject) => [
-      `${topic} refers to the standard concept taught under ${subject}, governed by its established rules and principles.`,
-      `${topic} is an undefined term with no formal basis in ${subject}.`,
-      `${topic} only applies to advanced research and has no role in a standard ${subject} curriculum.`,
-      `${topic} is unrelated to ${subject} and belongs to a different field of study.`,
+    buildPrompt: (topic) => `Which of the following best defines ${topic}?`,
+    buildOptions: (topic) => [
+      `${topic} refers to a well-established concept governed by its own clearly defined rules and principles.`,
+      `${topic} is an undefined term with no formal, agreed-upon definition.`,
+      `${topic} only applies to advanced research and has no role in a standard curriculum.`,
+      `${topic} is a purely informal idea with no accepted academic definition.`,
     ],
-    buildExplanation: (topic, subject) =>
-      `${topic} is a core topic within ${subject}, built on clearly defined rules that students are expected to recall and apply. The other options either deny that ${topic} has a formal definition or wrongly separate it from ${subject}, both of which are incorrect at this foundational level.`,
+    buildExplanation: (topic) =>
+      `${topic} is a well-defined concept built on clearly established rules that students are expected to recall and apply. The other options either deny that ${topic} has a formal definition or wrongly claim it lacks academic grounding, both of which are incorrect at this foundational level.`,
   },
   {
-    buildPrompt: (topic, subject) =>
-      `${topic} is most closely associated with which of the following in ${subject}?`,
-    buildOptions: (topic, subject) => [
-      `The fundamental rules and behavior patterns that ${subject} uses to explain ${topic}.`,
+    buildPrompt: (topic) =>
+      `Which of the following is most closely associated with ${topic}?`,
+    buildOptions: (topic) => [
+      `The fundamental rules and behavior patterns used to explain ${topic}.`,
       `A set of arbitrary rules with no experimental or logical basis.`,
       `Concepts exclusively borrowed from an unrelated discipline.`,
       `Random observations that cannot be reproduced or tested.`,
     ],
-    buildExplanation: (topic, subject) =>
-      `In ${subject}, ${topic} is explained using well-established rules and behavior patterns that can be consistently observed and tested — that is what makes it teachable and testable, unlike the other listed options.`,
+    buildExplanation: (topic) =>
+      `${topic} is explained using well-established rules and behavior patterns that can be consistently observed and tested — that consistency is what makes it teachable and testable, unlike the other listed options.`,
   },
   {
-    buildPrompt: (topic, subject) =>
-      `Why is ${topic} typically introduced early when studying ${subject}?`,
-    buildOptions: (topic, subject) => [
-      `Because it establishes the foundational understanding needed for more advanced topics in ${subject}.`,
-      `Because it is the most difficult topic and is reserved for advanced learners only.`,
-      `Because it has no real application within ${subject}.`,
-      `Because it must be studied only after mastering every other topic in ${subject}.`,
+    buildPrompt: (topic) =>
+      `Which statement best explains why ${topic} is considered a foundational concept?`,
+    buildOptions: () => [
+      `It establishes the basic understanding needed before tackling more advanced related concepts.`,
+      `It is the most difficult concept and is reserved for advanced learners only.`,
+      `It has no real practical application.`,
+      `It must be studied only after mastering every other related concept.`,
     ],
-    buildExplanation: (topic, subject) =>
-      `Foundational topics like ${topic} are introduced early precisely because later, more advanced material in ${subject} builds directly on this base understanding.`,
+    buildExplanation: (topic) =>
+      `Foundational concepts like ${topic} are introduced early precisely because more advanced material builds directly on this base understanding.`,
   },
 ];
 
 const MEDIUM_VARIANTS: TemplateVariant[] = [
   {
-    buildPrompt: (topic, subject) =>
-      `A student is solving a standard ${subject} problem involving ${topic}. Which approach should they apply first?`,
+    buildPrompt: (topic) =>
+      `A student is solving a problem involving ${topic}. Which approach should they apply first?`,
     buildOptions: (topic) => [
       `Identify the specific principles of ${topic} that govern the given scenario before applying any formula.`,
       `Guess an answer and check it against the back of the textbook.`,
       `Apply a formula from an unrelated topic and hope it fits.`,
       `Skip identifying the relevant principle and jump straight to a numerical answer.`,
     ],
-    buildExplanation: (topic, subject) =>
-      `Correctly applying ${topic} in ${subject} starts with identifying which principle governs the scenario — skipping this step, as the other options suggest, leads to answers that may be numerically close but conceptually wrong.`,
+    buildExplanation: (topic) =>
+      `Correctly applying ${topic} starts with identifying which principle governs the scenario — skipping this step, as the other options suggest, leads to answers that may be numerically close but conceptually wrong.`,
   },
   {
-    buildPrompt: (topic, subject) =>
-      `Which scenario demonstrates a correct real-world application of ${topic} within ${subject}?`,
-    buildOptions: (topic, subject) => [
-      `A situation where the behavior described by ${topic} is used to predict or explain an observed outcome in ${subject}.`,
-      `A situation where ${topic} is applied despite contradicting every principle of ${subject}.`,
-      `A case where the outcome has no relationship to ${topic} at all.`,
-      `A case chosen at random with no connection to ${subject}.`,
-    ],
-    buildExplanation: (topic, subject) =>
-      `A correct application of ${topic} always aligns with, and helps explain, real observed outcomes within ${subject} — that consistency is what separates a valid application from an unrelated or contradictory one.`,
-  },
-  {
-    buildPrompt: (topic, subject) =>
-      `If two components of a ${subject} problem both relate to ${topic}, what should a student check first?`,
+    buildPrompt: (topic) =>
+      `Which scenario demonstrates a correct real-world application of ${topic}?`,
     buildOptions: (topic) => [
-      `Whether the two components are consistent with the same underlying principle of ${topic}.`,
-      `Whether one of the components can simply be ignored.`,
-      `Whether the components belong to a completely different subject.`,
+      `A situation where the behavior described by ${topic} is used to predict or explain an observed outcome.`,
+      `A situation where ${topic} is applied despite contradicting its own governing principles.`,
+      `A case where the outcome has no relationship to ${topic} at all.`,
+      `A case chosen at random with no connection to ${topic}.`,
+    ],
+    buildExplanation: (topic) =>
+      `A correct application of ${topic} always aligns with, and helps explain, real observed outcomes — that consistency is what separates a valid application from an unrelated or contradictory one.`,
+  },
+  {
+    buildPrompt: (topic) =>
+      `If two parts of a problem both relate to ${topic}, what should a student check first?`,
+    buildOptions: (topic) => [
+      `Whether the two parts are consistent with the same underlying principle of ${topic}.`,
+      `Whether one of the parts can simply be ignored.`,
+      `Whether the parts belong to two entirely unrelated concepts.`,
       `Whether the problem can be solved without referencing ${topic} at all.`,
     ],
     buildExplanation: (topic) =>
@@ -121,36 +127,36 @@ const MEDIUM_VARIANTS: TemplateVariant[] = [
 
 const HARD_VARIANTS: TemplateVariant[] = [
   {
-    buildPrompt: (topic, subject) =>
-      `In an advanced ${subject} scenario, ${topic} interacts with a secondary variable. Which conclusion is most defensible?`,
-    buildOptions: (topic, subject) => [
-      `The outcome depends on how ${topic} and the secondary variable jointly satisfy the governing principles of ${subject}.`,
+    buildPrompt: (topic) =>
+      `In an advanced scenario, ${topic} interacts with a secondary variable. Which conclusion is most defensible?`,
+    buildOptions: (topic) => [
+      `The outcome depends on how ${topic} and the secondary variable jointly satisfy its governing principles.`,
       `The secondary variable can always be ignored regardless of context.`,
       `${topic} alone determines the outcome with no possible external influence.`,
-      `The governing principles of ${subject} do not apply once a second variable is introduced.`,
+      `The governing principles of ${topic} do not apply once a second variable is introduced.`,
     ],
-    buildExplanation: (topic, subject) =>
-      `At an advanced level, ${topic} rarely acts in isolation — the most defensible conclusion accounts for how it interacts with other variables while still satisfying the core principles of ${subject}, rather than dismissing either the variable or the principles altogether.`,
+    buildExplanation: (topic) =>
+      `At an advanced level, ${topic} rarely acts in isolation — the most defensible conclusion accounts for how it interacts with other variables while still satisfying its own core principles, rather than dismissing either the variable or the principles altogether.`,
   },
   {
-    buildPrompt: (topic, subject) =>
-      `Which statement best critiques a common misconception students hold about ${topic} in ${subject}?`,
+    buildPrompt: (topic) =>
+      `Which statement best critiques a common misconception students hold about ${topic}?`,
     buildOptions: (topic) => [
       `Students often oversimplify ${topic}, assuming it behaves identically in every context.`,
       `Students correctly assume ${topic} behaves identically in every context, with no exceptions.`,
       `There are no common misconceptions about ${topic} worth addressing.`,
       `${topic} has never been misunderstood by any student.`,
     ],
-    buildExplanation: (topic, subject) =>
-      `A key sign of advanced understanding is recognizing that ${topic} behaves differently across contexts within ${subject} — the common misconception is treating it as a one-size-fits-all rule rather than a principle with boundary conditions.`,
+    buildExplanation: (topic) =>
+      `A key sign of advanced understanding is recognizing that ${topic} behaves differently across contexts — the common misconception is treating it as a one-size-fits-all rule rather than a principle with boundary conditions.`,
   },
   {
-    buildPrompt: (topic, subject) =>
-      `An examiner wants to test deep understanding of ${topic}. Which question type is most appropriate for ${subject}?`,
+    buildPrompt: (topic) =>
+      `An examiner wants to test deep understanding of ${topic}. Which question type is most appropriate?`,
     buildOptions: (topic) => [
       `A question requiring students to justify why a given outcome follows from the principles of ${topic}.`,
       `A question asking students to simply restate the definition of ${topic} verbatim.`,
-      `A question with no connection to any principle of the subject.`,
+      `A question with no connection to any principle of ${topic}.`,
       `A question that can be answered correctly by guessing without reading about ${topic} at all.`,
     ],
     buildExplanation: (topic) =>
@@ -292,8 +298,8 @@ export function generateMockQuestions(
       hashString(`${subject}|${topic}|${params.difficulty}|${index}`),
     );
 
-    const correctText = variant.buildOptions(topic, subject)[0];
-    const rawOptions = variant.buildOptions(topic, subject);
+    const correctText = variant.buildOptions(topic)[0];
+    const rawOptions = variant.buildOptions(topic);
     const shuffledOptions = shuffleWithRandom(rawOptions, random);
     const correctIndex = shuffledOptions.indexOf(correctText);
 
@@ -303,13 +309,13 @@ export function generateMockQuestions(
       subject,
       topic,
       difficulty: params.difficulty,
-      prompt: variant.buildPrompt(topic, subject),
+      prompt: variant.buildPrompt(topic),
       options: shuffledOptions.map((text, optionIndex) => ({
         label: OPTION_LABELS[optionIndex],
         text,
       })),
       correctLabel: OPTION_LABELS[correctIndex],
-      explanation: variant.buildExplanation(topic, subject),
+      explanation: variant.buildExplanation(topic),
     };
   });
 }
