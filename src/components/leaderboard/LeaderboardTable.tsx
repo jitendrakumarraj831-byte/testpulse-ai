@@ -1,37 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Medal, Trophy } from "lucide-react";
-import type { LeaderboardEntry } from "@/lib/student/leaderboard";
+import type { RankedLeaderboardEntry } from "@/lib/student/leaderboard";
 import { formatRelativeTime } from "@/lib/student/leaderboard";
+import { RankDelta } from "@/components/leaderboard/RankDelta";
 
 interface LeaderboardTableProps {
-  entries: LeaderboardEntry[];
+  entries: RankedLeaderboardEntry[];
 }
-
-const RANK_STYLES = [
-  {
-    icon: Trophy,
-    ring: "ring-amber-400/60",
-    iconColor: "text-amber-400",
-    glow: "shadow-[0_0_25px_-6px_rgba(251,191,36,0.6)]",
-    border: "border-amber-500/30",
-  },
-  {
-    icon: Medal,
-    ring: "ring-slate-300/50",
-    iconColor: "text-slate-300",
-    glow: "shadow-[0_0_20px_-6px_rgba(203,213,225,0.5)]",
-    border: "border-slate-400/20",
-  },
-  {
-    icon: Medal,
-    ring: "ring-orange-400/50",
-    iconColor: "text-orange-400",
-    glow: "shadow-[0_0_20px_-6px_rgba(251,146,60,0.5)]",
-    border: "border-orange-500/20",
-  },
-];
 
 export function LeaderboardTable({ entries }: LeaderboardTableProps) {
   if (entries.length === 0) {
@@ -50,8 +26,6 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
   return (
     <div className="card-glow overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-md">
       {entries.map((entry, index) => {
-        const rankStyle = RANK_STYLES[index];
-        const Icon = rankStyle?.icon;
         const initial = entry.studentName.trim().charAt(0).toUpperCase() || "?";
 
         return (
@@ -60,25 +34,13 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: Math.min(index, 12) * 0.04 }}
-            className={`flex items-center gap-4 border-b border-slate-800/60 px-4 py-4 last:border-0 sm:px-6 ${
-              rankStyle ? `bg-white/[0.02] ${rankStyle.border} border-l-2` : ""
-            }`}
+            className="flex items-center gap-4 border-b border-slate-800/60 px-4 py-4 last:border-0 sm:px-6"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center">
-              {Icon ? (
-                <Icon className={`h-5 w-5 ${rankStyle.iconColor}`} />
-              ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-400">
-                  {index + 1}
-                </span>
-              )}
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-400">
+              {entry.rank}
             </span>
 
-            <span
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 text-sm font-bold text-cyan-300 ring-1 ${
-                rankStyle ? `${rankStyle.ring} ${rankStyle.glow}` : "ring-cyan-500/30"
-              }`}
-            >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-500/10 text-sm font-bold text-cyan-300 ring-1 ring-cyan-500/30">
               {initial}
             </span>
 
@@ -90,6 +52,8 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
                 {entry.subjectName}
               </p>
             </div>
+
+            <RankDelta rank={entry.rank} previousRank={entry.previousRank} compact />
 
             <div className="shrink-0 text-right">
               <p className="text-sm font-bold text-cyan-400">
