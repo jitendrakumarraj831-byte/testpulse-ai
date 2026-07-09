@@ -201,6 +201,44 @@ create policy "Admins can update any profile"
     )
   );
 
+-- The "Users can update their own profile" policy above only has a USING
+-- clause, no WITH CHECK — and per Postgres RLS semantics, an UPDATE policy
+-- without an explicit WITH CHECK reuses USING (auth.uid() = id) for the new
+-- row too. That only re-validates the id column, so on its own it leaves a
+-- privilege-escalation hole: any authenticated student could run
+-- `update public.profiles set role = 'admin' where id = auth.uid()` (or
+-- flip their own `status` back to 'active' after being suspended) and the
+-- policy would allow it, contradicting the "no public path to becoming an
+-- admin" guarantee this schema otherwise relies on. RLS policies can't
+-- express "this column may only change if X", so we close the gap with a
+-- BEFORE UPDATE trigger instead: it lets admins change role/status freely
+-- (needed for the StudentDirectory suspend/activate + role tools) but
+-- rejects any attempt to change either column from a non-admin actor,
+-- regardless of which UPDATE policy let the statement through.
+create or replace function public.protect_profile_privileged_columns()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.role is distinct from old.role or new.status is distinct from old.status then
+    if not exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    ) then
+      raise exception 'Only admins can change role or status.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_privileged_columns on public.profiles;
+create trigger protect_profile_privileged_columns
+  before update on public.profiles
+  for each row execute function public.protect_profile_privileged_columns();
+
 -- Auto-creates a profile row (role always defaults to 'student' — there is
 -- deliberately no public path to becoming an admin) the moment someone
 -- completes Supabase Auth sign-up.
