@@ -11,6 +11,7 @@ import {
   Loader2,
   RotateCcw,
   ShieldAlert,
+  ShieldCheck,
   XCircle,
 } from "lucide-react";
 import type {
@@ -21,6 +22,7 @@ import type {
 import type { SubjectAccent } from "@/lib/student/subjects";
 import type { StudentResponseInsert } from "@/lib/student/responses";
 import { createClient } from "@/utils/supabase/client";
+import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
 interface TestWorkspaceProps {
   examId: string;
@@ -370,24 +372,94 @@ export function TestWorkspace({
                 aria-label="Your name"
                 className="w-32 rounded-full border border-slate-700 bg-slate-900/70 px-3.5 py-2 text-xs text-white placeholder:text-slate-600 outline-none transition-colors focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-40 sm:text-sm"
               />
-              <span
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-                  isLowTime
-                    ? "animate-pulse border-rose-500/60 bg-rose-500/10 text-rose-300"
-                    : "border-slate-700 bg-slate-900/70 text-slate-300"
-                }`}
-              >
-                <Clock
-                  className={`h-4 w-4 ${isLowTime ? "text-rose-400" : "text-cyan-400"}`}
-                />
-                {formatTime(secondsLeft)}
-              </span>
               <Link
                 href={examsHref}
                 className="text-sm font-medium text-slate-500 transition-colors hover:text-cyan-400"
               >
                 Exit
               </Link>
+            </div>
+          </div>
+
+          {/* Proctoring HUD: live status strip reusing the CommandDeck
+              glow/corner-bracket vocabulary — surfaces the anti-cheat state
+              (previously only visible in the violation modal) at all times. */}
+          <div className="card-glow relative mt-4 overflow-hidden rounded-xl border border-rose-500/20 bg-slate-900/50 px-4 py-3">
+            <CornerBrackets colorClass="text-rose-400/70" alwaysVisible />
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 ring-1 ring-rose-500/30">
+                  <ShieldCheck className="h-4 w-4 text-rose-400" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-300">
+                      Proctoring
+                    </p>
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-rose-400" />
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-white">Active</p>
+                </div>
+              </div>
+
+              <div className="hidden h-8 w-px bg-slate-800 sm:block" />
+
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    isLowTime
+                      ? "bg-rose-500/10 ring-1 ring-rose-500/30"
+                      : "bg-cyan-500/10 ring-1 ring-cyan-500/30"
+                  }`}
+                >
+                  <Clock
+                    className={`h-4 w-4 ${isLowTime ? "text-rose-400" : "text-cyan-400"}`}
+                  />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Time Left
+                  </p>
+                  <p
+                    className={`text-sm font-bold tabular-nums ${
+                      isLowTime ? "animate-pulse text-rose-300" : "text-white"
+                    }`}
+                  >
+                    {formatTime(secondsLeft)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="hidden h-8 w-px bg-slate-800 sm:block" />
+
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    tabSwitchCount > 0
+                      ? "bg-amber-500/10 ring-1 ring-amber-500/30"
+                      : "bg-slate-800 ring-1 ring-slate-700"
+                  }`}
+                >
+                  <AlertTriangle
+                    className={`h-4 w-4 ${tabSwitchCount > 0 ? "text-amber-400" : "text-slate-500"}`}
+                  />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Infractions
+                  </p>
+                  <p
+                    className={`text-sm font-bold ${
+                      tabSwitchCount > 0 ? "text-amber-300" : "text-white"
+                    }`}
+                  >
+                    {tabSwitchCount}/{MAX_INFRACTIONS}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

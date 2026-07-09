@@ -5,6 +5,7 @@ import { EnterpriseFeatures } from "@/components/landing/EnterpriseFeatures";
 import { InstitutionPricing } from "@/components/landing/InstitutionPricing";
 import { StudentHero } from "@/components/student/StudentHero";
 import { SubjectGrid } from "@/components/student/SubjectGrid";
+import { CommandDeck } from "@/components/dashboard/CommandDeck";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <Navbar />
       <main className="flex-1">
         <StudentHero />
+        <CommandDeck />
         <SubjectGrid />
         <WhiteLabelPreview />
         <EnterpriseFeatures />

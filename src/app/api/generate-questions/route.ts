@@ -7,7 +7,7 @@ import {
   type DifficultyLevel,
   type GenerateQuestionsResponse,
 } from "@/lib/admin/question-generator";
-import { callGeminiJSON } from "@/lib/ai/gemini";
+import { callGroqJSON } from "@/lib/ai/groq";
 
 const MIN_COUNT = 1;
 const MAX_COUNT = 30;
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
 
   const count = normalizeCount(body.count);
   const difficulty = normalizeDifficulty(body.difficulty);
-  const apiKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY || process.env.AI_API_KEY;
 
   if (!apiKey) {
     const payload: GenerateQuestionsResponse = {
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
 
   try {
     const prompt = buildPrompt(subject, topic, count, difficulty);
-    const parsed = await callGeminiJSON(prompt, apiKey);
+    const parsed = await callGroqJSON(prompt, apiKey);
 
     if (!isValidPayload(parsed)) {
       throw new Error("AI response failed structured JSON validation.");
