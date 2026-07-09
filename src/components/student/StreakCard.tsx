@@ -8,6 +8,7 @@ import {
   getStreakSummary,
   type StreakSummary,
 } from "@/lib/student/streak";
+import { createClient } from "@/utils/supabase/client";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
 const BADGE_ICONS: Record<string, LucideIcon> = {
@@ -25,14 +26,22 @@ export function StreakCard() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   useEffect(() => {
-    const name = getStoredStudentName().trim();
-    if (!name) {
-      setState({ status: "no-name" });
-      return;
-    }
-    setState({ status: "loading" });
-    void getStreakSummary(name).then((summary) => {
-      setState({ status: "ready", name, summary });
+    const client = createClient();
+    void client.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      const profileName = user?.user_metadata?.full_name;
+      const name =
+        (typeof profileName === "string" && profileName.trim()) ||
+        getStoredStudentName().trim();
+
+      if (!name) {
+        setState({ status: "no-name" });
+        return;
+      }
+      setState({ status: "loading" });
+      void getStreakSummary(name, user?.id ?? null).then((summary) => {
+        setState({ status: "ready", name, summary });
+      });
     });
   }, []);
 

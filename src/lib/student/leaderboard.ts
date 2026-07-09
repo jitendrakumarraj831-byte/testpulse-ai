@@ -1,6 +1,8 @@
 export interface LeaderboardEntry {
   id: string;
   studentName: string;
+  /** The submitter's auth user id, when the submission was made while signed in — null for anonymous/legacy rows. */
+  studentId: string | null;
   subjectSlug: string;
   subjectName: string;
   score: number;
@@ -58,7 +60,10 @@ export function aggregateLeaderboard(
 
   const byStudent = new Map<string, LeaderboardEntry[]>();
   for (const entry of filtered) {
-    const key = entry.studentName.trim().toLowerCase();
+    // Group by account when the submission is tied to one — immune to a
+    // later display-name change or a typo. Anonymous/legacy rows (no
+    // student_id yet) still group by name, same as before.
+    const key = entry.studentId ?? `name:${entry.studentName.trim().toLowerCase()}`;
     const list = byStudent.get(key);
     if (list) {
       list.push(entry);

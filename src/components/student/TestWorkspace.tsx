@@ -66,6 +66,7 @@ export function TestWorkspace({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, OptionLabel>>({});
   const [studentName, setStudentName] = useState("");
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -79,10 +80,22 @@ export function TestWorkspace({
   const [isDisqualified, setIsDisqualified] = useState(false);
 
   // Prefill the name field from a prior visit, client-side only (avoids an
-  // SSR/hydration mismatch on the controlled input's value).
+  // SSR/hydration mismatch on the controlled input's value). If a session
+  // exists, the signed-in profile's name wins — it's the authoritative
+  // identity submissions should be tied to going forward.
   useEffect(() => {
     const stored = getStoredStudentName();
     if (stored) setStudentName(stored);
+
+    const client = createClient();
+    void client.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      setAuthUserId(user?.id ?? null);
+      const profileName = user?.user_metadata?.full_name;
+      if (typeof profileName === "string" && profileName.trim()) {
+        setStudentName(profileName.trim());
+      }
+    });
   }, []);
 
   const submitTest = async () => {
@@ -100,6 +113,7 @@ export function TestWorkspace({
       const payload: StudentResponseInsert = {
         exam_id: examId,
         student_name: studentName.trim() || DEFAULT_STUDENT_NAME,
+        student_id: authUserId,
         answers,
         score,
       };

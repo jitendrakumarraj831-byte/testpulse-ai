@@ -230,3 +230,32 @@ create trigger on_auth_user_created
 -- One-time manual step — run this yourself after your first real signup.
 -- There is intentionally no self-service or API path to grant admin:
 --   update public.profiles set role = 'admin' where email = 'you@example.com';
+
+-- ============================================================
+-- Link student_responses to the authenticated profile
+-- ============================================================
+-- Before this, a submission was matched back to a student only by the
+-- free-text `student_name` field (see the streak/leaderboard lookups),
+-- which pre-dates real accounts and doesn't survive a display-name change
+-- or a typo. This ties new submissions to the signed-in auth user while
+-- leaving `student_name` in place so older, pre-auth anonymous rows (and
+-- anyone still taking a test while logged out) keep working exactly as
+-- before — nothing here is a breaking change.
+alter table public.student_responses
+  add column if not exists student_id uuid references auth.users (id) on delete set null;
+
+create index if not exists student_responses_student_id_idx
+  on public.student_responses (student_id);
+
+-- Re-grant the leaderboard-safe column set to include student_id (both for
+-- direct table queries like the streak lookup, and because the view below
+-- runs with security_invoker = true, so it needs the querying role to hold
+-- this grant itself).
+revoke select on public.student_responses from anon, authenticated;
+grant select (id, exam_id, student_name, student_id, score, submitted_at)
+  on public.student_responses to anon, authenticated;
+
+create or replace view public.leaderboard_entries
+with (security_invoker = true) as
+select id, exam_id, student_name, student_id, score, submitted_at
+from public.student_responses;
