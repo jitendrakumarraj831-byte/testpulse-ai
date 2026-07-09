@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AIGeneratorPanel } from "@/components/admin/AIGeneratorPanel";
+import { LiveAnalyticsPreview } from "@/components/admin/LiveAnalyticsPreview";
 
 export const metadata: Metadata = {
   title: "AI Question Generator | TestPulse AI Admin",
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
 export default function AiGeneratorPage() {
   return (
     <div className="glow-field min-h-screen bg-slate-950">
-      <AdminHeader />
+      <AdminHeader activePage="generator" />
+      <div className="mx-auto max-w-4xl px-6 pt-10 lg:px-8">
+        <LiveAnalyticsPreview />
+      </div>
       <AIGeneratorPanel />
     </div>
   );

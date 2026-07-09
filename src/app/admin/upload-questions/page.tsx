@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function UploadQuestionsPage() {
   return (
     <div className="glow-field min-h-screen bg-slate-950">
-      <AdminHeader activeLabel="Upload Questions" />
+      <AdminHeader activeLabel="Upload Questions" activePage="uploader" />
       <UploadQuestionsPanel />
     </div>
   );

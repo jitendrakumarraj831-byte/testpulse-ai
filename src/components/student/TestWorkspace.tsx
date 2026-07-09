@@ -23,6 +23,8 @@ import type { SubjectAccent } from "@/lib/student/subjects";
 import type { StudentResponseInsert } from "@/lib/student/responses";
 import { createClient } from "@/utils/supabase/client";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
+import { recordQuizCompletion } from "@/lib/student/streak";
+import { PerformanceBreakdown } from "@/components/student/PerformanceBreakdown";
 
 interface TestWorkspaceProps {
   examId: string;
@@ -83,6 +85,8 @@ export function TestWorkspace({
     const score = questions.filter(
       (question) => answers[question.id] === question.correctAnswer,
     ).length;
+
+    recordQuizCompletion(score, questions.length);
 
     try {
       const supabase = createClient();
@@ -282,6 +286,16 @@ export function TestWorkspace({
               </div>
             )}
           </motion.div>
+
+          {!isDisqualified && (
+            <PerformanceBreakdown
+              subjectName={subjectName}
+              examTitle={examTitle}
+              score={finalScore}
+              questions={questions}
+              answers={answers}
+            />
+          )}
 
           {!isDisqualified && (
             <div className="mt-8 space-y-4">

@@ -1,12 +1,35 @@
 import Link from "next/link";
-import { Activity, ChevronRight, LayoutDashboard } from "lucide-react";
+import {
+  Activity,
+  ChevronRight,
+  LayoutDashboard,
+  Sparkles,
+  UploadCloud,
+} from "lucide-react";
 
 interface AdminHeaderProps {
   activeLabel?: string;
+  activePage?: "generator" | "uploader";
 }
+
+const ADMIN_TABS = [
+  {
+    key: "generator" as const,
+    label: "AI Generator",
+    href: "/admin/ai-generator",
+    icon: Sparkles,
+  },
+  {
+    key: "uploader" as const,
+    label: "Bulk Uploader",
+    href: "/admin/upload-questions",
+    icon: UploadCloud,
+  },
+];
 
 export function AdminHeader({
   activeLabel = "AI Question Generator",
+  activePage,
 }: AdminHeaderProps) {
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg">
@@ -43,7 +66,27 @@ export function AdminHeader({
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 pb-4 text-sm text-slate-500 lg:px-8">
+      <div className="mx-auto flex max-w-6xl gap-1 px-4 lg:px-6">
+        {ADMIN_TABS.map((tab) => {
+          const isActive = tab.key === activePage;
+          return (
+            <Link
+              key={tab.key}
+              href={tab.href}
+              className={`inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
+                isActive
+                  ? "border-cyan-400 text-cyan-300"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mx-auto flex max-w-6xl items-center gap-2 border-t border-slate-800/60 px-6 py-3 text-sm text-slate-500 lg:px-8">
         <LayoutDashboard className="h-4 w-4" />
         <span>Dashboard</span>
         <ChevronRight className="h-3.5 w-3.5" />
