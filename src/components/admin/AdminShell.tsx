@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ClipboardList,
   LayoutDashboard,
+  Receipt,
   Settings,
   Sparkles,
   UploadCloud,
@@ -33,6 +34,7 @@ const ADMIN_NAV: AdminNavItem[] = [
   { key: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarClock },
   { key: "assignments", label: "Assignments", href: "/admin/assignments", icon: ClipboardList },
   { key: "attendance", label: "Attendance", href: "/admin/attendance", icon: CheckSquare },
+  { key: "fees", label: "Fee Ledger", href: "/admin/fees", icon: Receipt },
   { key: "students", label: "Manage Students", href: "/admin/students", icon: UserCog },
   { key: "settings", label: "System Settings", href: "/admin/settings", icon: Settings },
 ];
@@ -75,6 +77,9 @@ function getBreadcrumb(pathname: string): BreadcrumbSegment[] {
   }
   if (pathname.startsWith("/admin/attendance")) {
     return [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Attendance" }];
+  }
+  if (pathname.startsWith("/admin/fees")) {
+    return [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Fee Ledger" }];
   }
   if (pathname.startsWith("/admin/settings")) {
     return [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "System Settings" }];

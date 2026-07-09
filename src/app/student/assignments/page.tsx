@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { getAssignmentsWithSubmissions } from "@/lib/academic-hub/data";
 import { StudentAssignmentsView } from "@/components/student/StudentAssignmentsView";
-import type { Assignment, AssignmentSubmission } from "@/lib/academic-hub/types";
 
 export const metadata: Metadata = {
   title: "Assignments | TestPulse AI",
@@ -13,28 +13,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-interface AssignmentRow {
-  id: string;
-  title: string;
-  description: string;
-  subject: string;
-  batch: string | null;
-  due_at: string;
-  created_at: string;
-}
-
-interface SubmissionRow {
-  id: string;
-  assignment_id: string;
-  student_id: string;
-  response_text: string;
-  response_url: string | null;
-  status: "submitted" | "graded";
-  grade: string | null;
-  feedback: string | null;
-  submitted_at: string;
-}
 
 export default async function StudentAssignmentsPage() {
   noStore();
@@ -60,47 +38,10 @@ export default async function StudentAssignmentsPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const [{ data: assignmentRows }, { data: submissionRows }] = await Promise.all([
-    supabase
-      .from("assignments")
-      .select("id, title, description, subject, batch, due_at, created_at")
-      .order("due_at", { ascending: true }),
-    supabase
-      .from("assignment_submissions")
-      .select(
-        "id, assignment_id, student_id, response_text, response_url, status, grade, feedback, submitted_at",
-      )
-      .eq("student_id", user.id),
-  ]);
-
-  const myBatch = profile?.batch ?? null;
-  const assignments: Assignment[] = ((assignmentRows ?? []) as AssignmentRow[])
-    .filter((row) => !row.batch || row.batch === myBatch)
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      subject: row.subject,
-      batch: row.batch,
-      dueAt: row.due_at,
-      createdAt: row.created_at,
-    }));
-
-  const submissionsByAssignmentId: Record<string, AssignmentSubmission> = Object.fromEntries(
-    ((submissionRows ?? []) as SubmissionRow[]).map((row) => [
-      row.assignment_id,
-      {
-        id: row.id,
-        assignmentId: row.assignment_id,
-        studentId: row.student_id,
-        responseText: row.response_text,
-        responseUrl: row.response_url,
-        status: row.status,
-        grade: row.grade,
-        feedback: row.feedback,
-        submittedAt: row.submitted_at,
-      },
-    ]),
+  const { assignments, submissionsByAssignmentId } = await getAssignmentsWithSubmissions(
+    supabase,
+    user.id,
+    profile?.batch ?? null,
   );
 
   return (

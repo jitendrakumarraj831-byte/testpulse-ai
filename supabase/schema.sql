@@ -698,3 +698,71 @@ create policy "Admins can delete attendance"
       where admin_check.id = auth.uid() and admin_check.role = 'admin'
     )
   );
+
+-- ============================================================
+-- Fee Ledger & Receipts (Module 4.2)
+-- ============================================================
+-- Manual ledger only — an admin records a payment they already received
+-- (cash, bank transfer, UPI, etc.) and this generates a receipt. There is
+-- deliberately no payment gateway integration here and no way for money to
+-- move through the app itself; that's a materially bigger, separate
+-- decision (choosing and wiring a live gateway) that hasn't been made.
+-- `student_id` is nullable so a payment can be recorded against a walk-in
+-- payer who doesn't have (or doesn't yet have) an account.
+create table if not exists public.fee_payments (
+  id uuid primary key default gen_random_uuid(),
+  receipt_number text not null,
+  student_id uuid references auth.users (id) on delete set null,
+  payer_name text not null,
+  amount numeric not null check (amount > 0),
+  payment_method text not null default 'cash' check (payment_method in ('cash', 'bank_transfer', 'upi', 'cheque', 'other')),
+  fee_period text not null default '',
+  notes text not null default '',
+  recorded_by uuid references auth.users (id) on delete set null,
+  paid_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (receipt_number)
+);
+
+create index if not exists fee_payments_paid_at_idx on public.fee_payments (paid_at);
+create index if not exists fee_payments_student_id_idx on public.fee_payments (student_id);
+
+alter table public.fee_payments enable row level security;
+
+-- Financial records — admin-only in every direction, no student read
+-- access (a student's own fee history isn't exposed by this module yet).
+create policy "Admins can view fee payments"
+  on public.fee_payments for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can record fee payments"
+  on public.fee_payments for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update fee payments"
+  on public.fee_payments for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete fee payments"
+  on public.fee_payments for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );

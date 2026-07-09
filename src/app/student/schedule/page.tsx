@@ -5,7 +5,8 @@ import { unstable_noStore as noStore } from "next/cache";
 import { CalendarClock, Link2, Video } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
-import type { ScheduleEntry, ScheduleEventType } from "@/lib/academic-hub/types";
+import { getUpcomingSchedule } from "@/lib/academic-hub/data";
+import type { ScheduleEventType } from "@/lib/academic-hub/types";
 
 export const metadata: Metadata = {
   title: "Schedule | TestPulse AI",
@@ -13,18 +14,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-interface ScheduleRow {
-  id: string;
-  title: string;
-  subject: string;
-  event_type: ScheduleEventType;
-  batch: string | null;
-  starts_at: string;
-  ends_at: string;
-  join_url: string | null;
-  notes: string;
-}
 
 const EVENT_TYPE_LABEL: Record<ScheduleEventType, string> = {
   class: "Class",
@@ -76,28 +65,9 @@ export default async function StudentSchedulePage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { data } = await supabase
-    .from("class_schedule")
-    .select("id, title, subject, event_type, batch, starts_at, ends_at, join_url, notes")
-    .gte("starts_at", new Date().toISOString())
-    .order("starts_at", { ascending: true });
+  const entries = await getUpcomingSchedule(supabase, profile?.batch ?? null);
 
-  const myBatch = profile?.batch ?? null;
-  const entries: ScheduleEntry[] = ((data ?? []) as ScheduleRow[])
-    .filter((row) => !row.batch || row.batch === myBatch)
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      subject: row.subject,
-      eventType: row.event_type,
-      batch: row.batch,
-      startsAt: row.starts_at,
-      endsAt: row.ends_at,
-      joinUrl: row.join_url,
-      notes: row.notes,
-    }));
-
-  const groups = new Map<string, ScheduleEntry[]>();
+  const groups = new Map<string, typeof entries>();
   for (const entry of entries) {
     const dayKey = entry.startsAt.slice(0, 10);
     const group = groups.get(dayKey);

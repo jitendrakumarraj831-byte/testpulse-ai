@@ -6,9 +6,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, LogIn, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
+const PORTAL_COPY: Record<string, { heading: string; subheading: string }> = {
+  admin: { heading: "Institute Admin Sign In", subheading: "Manage your institute — log in to continue." },
+  student: { heading: "Student Sign In", subheading: "Back to your studies — log in to continue." },
+};
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // `portal` only customizes this heading's copy — which account you land
+  // on is still determined entirely by profiles.role after auth, exactly
+  // as before. There's no "log in as admin" mechanism; that would be
+  // insecure and nonsensical (an account's role isn't a login choice).
+  const portalCopy = PORTAL_COPY[searchParams.get("portal") ?? ""] ?? {
+    heading: "Welcome back",
+    subheading: "Log in to continue.",
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,8 +73,8 @@ export function LoginForm() {
 
   return (
     <>
-      <h1 className="text-lg font-bold text-white sm:text-xl">Welcome back</h1>
-      <p className="mt-1 text-sm text-slate-500">Log in to continue.</p>
+      <h1 className="text-lg font-bold text-white sm:text-xl">{portalCopy.heading}</h1>
+      <p className="mt-1 text-sm text-slate-500">{portalCopy.subheading}</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
