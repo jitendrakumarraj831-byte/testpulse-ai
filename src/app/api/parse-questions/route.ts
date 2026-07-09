@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isApiQuestion, type ApiQuestion } from "@/lib/admin/question-generator";
 import { heuristicParseRawText } from "@/lib/admin/question-parser";
-import { callGeminiJSON } from "@/lib/ai/gemini";
+import { callGroqJSON } from "@/lib/ai/groq";
 
 export interface ParseQuestionsResponse {
   questions: ApiQuestion[];
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiKey = process.env.AI_API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY || process.env.AI_API_KEY;
 
   if (!apiKey) {
     const payload: ParseQuestionsResponse = {
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
   try {
     const prompt = buildPrompt(rawText);
-    const parsed = await callGeminiJSON(prompt, apiKey);
+    const parsed = await callGroqJSON(prompt, apiKey);
 
     if (!isValidPayload(parsed)) {
       throw new Error("AI response failed structured JSON validation.");
