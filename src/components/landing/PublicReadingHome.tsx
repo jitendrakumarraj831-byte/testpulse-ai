@@ -53,7 +53,7 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden px-6 pt-20 pb-16 text-center lg:px-8 lg:pt-28">
+        <section className="relative overflow-hidden px-6 pt-14 pb-12 text-center sm:pt-20 sm:pb-16 lg:px-8 lg:pt-28">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             Free to explore — no sign-in required
           </motion.div>
 
-          <div className="relative mx-auto mt-10 flex h-40 w-40 items-center justify-center sm:h-48 sm:w-48">
+          <div className="relative mx-auto mt-8 flex h-32 w-32 items-center justify-center sm:mt-10 sm:h-48 sm:w-48">
             <motion.span
               animate={{ rotate: 360 }}
               transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
@@ -90,7 +90,7 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15 }}
-            className="text-glow mx-auto mt-8 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl"
+            className="text-glow mx-auto mt-6 max-w-3xl text-4xl font-bold tracking-tight text-white sm:mt-8 sm:text-5xl lg:text-6xl"
           >
             Read. Practice. Ask <span className="text-cyan-400">AI</span>.
           </motion.h1>
@@ -99,7 +99,7 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.25 }}
-            className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg"
+            className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-400 sm:mt-5 sm:text-lg"
           >
             Browse chapter notes and books, practice Current Affairs, and
             chat with an AI tutor — open to everyone, no account needed.
@@ -109,7 +109,7 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.35 }}
-            className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row"
+            className="mt-7 flex flex-col items-center justify-center gap-3 sm:mt-9 sm:flex-row"
           >
             <Link
               href="/portal"
@@ -129,7 +129,10 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
         </section>
 
         {/* Featured reads — real library_catalog() resources */}
-        <section id="featured-reads" className="px-6 pb-4 lg:px-8">
+        <section
+          id="featured-reads"
+          className="scroll-mt-24 border-t border-slate-800/60 px-6 py-14 sm:py-20 lg:px-8"
+        >
           <div className="mx-auto max-w-6xl">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -156,17 +159,21 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             </motion.div>
 
             {!isConfigured && (
-              <p className="mt-8 text-sm text-slate-600">
-                Supabase isn&apos;t configured in this environment, so the
-                library preview can&apos;t load — this is expected in
-                local/preview setups without env vars set.
-              </p>
+              <div className="card-glow mt-8 rounded-2xl border border-slate-800 bg-slate-900/40 px-6 py-8 text-center backdrop-blur-md">
+                <p className="text-sm text-slate-500">
+                  Supabase isn&apos;t configured in this environment, so the
+                  library preview can&apos;t load — this is expected in
+                  local/preview setups without env vars set.
+                </p>
+              </div>
             )}
 
             {isConfigured && featuredResources.length === 0 && (
-              <p className="mt-8 text-sm text-slate-600">
-                No resources have been published to the library yet.
-              </p>
+              <div className="card-glow mt-8 rounded-2xl border border-slate-800 bg-slate-900/40 px-6 py-8 text-center backdrop-blur-md">
+                <p className="text-sm text-slate-500">
+                  No resources have been published to the library yet.
+                </p>
+              </div>
             )}
 
             {featuredResources.length > 0 && (
@@ -180,14 +187,14 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
         </section>
 
         {/* Current Affairs + AI Guru — live practice/chat, not fabricated articles */}
-        <section className="px-6 py-20 lg:px-8">
+        <section className="border-t border-slate-800/60 px-6 py-14 sm:py-20 lg:px-8">
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5 }}
-              className="card-glow group relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-7 backdrop-blur-md transition-all duration-300 hover:border-amber-500/40 hover:shadow-[0_0_45px_-10px_rgba(245,158,11,0.5)]"
+              className="card-glow group relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md transition-all duration-300 hover:border-amber-500/40 sm:p-7 hover:shadow-[0_0_45px_-10px_rgba(245,158,11,0.5)]"
             >
               <CornerBrackets colorClass="text-amber-400" />
               <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 ring-1 ring-amber-500/30">
@@ -213,7 +220,7 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="card-glow group relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-7 backdrop-blur-md transition-all duration-300 hover:border-violet-500/40 hover:shadow-[0_0_45px_-10px_rgba(139,92,246,0.5)]"
+              className="card-glow group relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md transition-all duration-300 hover:border-violet-500/40 sm:p-7 hover:shadow-[0_0_45px_-10px_rgba(139,92,246,0.5)]"
             >
               <CornerBrackets colorClass="text-violet-400" />
               <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 ring-1 ring-violet-500/30">
@@ -237,13 +244,13 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
         </section>
 
         {/* Closing CTA */}
-        <section className="px-6 pb-24 lg:px-8">
+        <section className="border-t border-slate-800/60 px-6 py-14 sm:pb-24 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.5 }}
-            className="card-glow relative mx-auto flex max-w-4xl flex-col items-center gap-4 overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-900/60 px-8 py-12 text-center backdrop-blur-md"
+            className="card-glow relative mx-auto flex max-w-4xl flex-col items-center gap-4 overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-b from-slate-900/80 to-slate-900/40 px-6 py-10 text-center backdrop-blur-md sm:px-8 sm:py-12"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 ring-1 ring-cyan-500/30">
               <Sparkles className="h-6 w-6 text-cyan-400" />
