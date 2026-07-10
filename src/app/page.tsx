@@ -9,18 +9,20 @@ import type { LibraryResource } from "@/lib/library/types";
 export const metadata: Metadata = {
   title: "TestPulse AI | Read, Practice, and Learn",
   description:
-    "Browse chapter notes and books, practice Current Affairs, and chat with AI Guru — free to explore, no sign-in required. Institutes and their students go to the Institute Workspace to manage everything else.",
+    "Browse chapter notes and books, practice Current Affairs, and chat with AI Guru — free to explore, no sign-in required. TestPulse AI also runs the full institute back office: timetables, homework, attendance, fee ledgers, and an AI exam engine.",
 };
 
 export const dynamic = "force-dynamic";
 
 /** The public "/" — a guest-facing reading and practice platform, open to
- * anyone with no sign-in required. This is deliberately separate from the
- * signed-in-aware gateway/dashboards, which now live at /portal (see
- * src/app/portal/page.tsx). Only real, database-backed content is shown
- * here: a handful of actual `library_catalog()` resources as a preview —
- * there is no articles/blog content model in this app, so this page
- * doesn't invent one. */
+ * anyone with no sign-in required, that also carries the full product
+ * story (enterprise features, pricing, onboarding) previously split out to
+ * /product. This is deliberately separate from the signed-in-aware
+ * gateway/dashboards, which live at /portal (see src/app/portal/page.tsx).
+ * A handful of real `library_catalog()` resources are fetched here as a
+ * preview; everything else that isn't database-backed (the subject
+ * showcase grid, pricing, enterprise feature copy) is presented as
+ * illustrative marketing content, not live data. */
 export default async function Home() {
   noStore();
 
