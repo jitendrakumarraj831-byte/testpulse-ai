@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Activity,
-  ArrowRight,
-  Bot,
-  BookOpen,
-  ChevronDown,
-  Library,
-  Rss,
-  Sparkles,
-} from "lucide-react";
+import { Activity, ArrowRight, Bot, ChevronDown, Rss, Sparkles } from "lucide-react";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 import { ResourceCard } from "@/components/library/ResourceCard";
+import { Navbar } from "@/components/landing/Navbar";
+import { Footer } from "@/components/landing/Footer";
+import { LibraryCategoryShowcase } from "@/components/landing/LibraryCategoryShowcase";
+import { CorePillars } from "@/components/landing/CorePillars";
+import { WhiteLabelPreview } from "@/components/landing/WhiteLabelPreview";
+import { EnterpriseFeatures } from "@/components/landing/EnterpriseFeatures";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { InstitutionPricing } from "@/components/landing/InstitutionPricing";
 import type { LibraryResource } from "@/lib/library/types";
 
 interface PublicReadingHomeProps {
@@ -21,35 +20,23 @@ interface PublicReadingHomeProps {
   isConfigured: boolean;
 }
 
-/** The public "/" landing experience: a guest-facing reading and practice
- * platform, no sign-in required. Only real, database-backed content is
- * shown (a preview of actual `library_catalog()` resources) — Current
- * Affairs and AI Guru are presented as live practice/chat destinations,
- * not fabricated article snippets, since this app has no articles/blog
- * content model to draw from. */
+/** The public "/" landing experience: the full product story for a
+ * logged-out visitor, whether they're a student who wants to read and
+ * practice right now, or an institute evaluating the platform. Two kinds
+ * of content sit side by side here on purpose:
+ *  - Real, database-backed sections (featured resources, every /student
+ *    and /admin deep-link in CorePillars) show only what the platform
+ *    actually has and does — nothing invented.
+ *  - The subject showcase grid and enterprise sections (features,
+ *    white-label preview, pricing, how-it-works) are illustrative
+ *    marketing content, clearly framed as navigation/explanation rather
+ *    than live counts or stats.
+ * The enterprise pitch previously lived at /product; it's folded back in
+ * here so "/" carries the full depth of the platform before sign-in. */
 export function PublicReadingHome({ featuredResources, isConfigured }: PublicReadingHomeProps) {
   return (
     <div className="glow-field flex min-h-screen flex-col bg-slate-950">
-      <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-lg">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
-              <Activity className="h-5 w-5 text-cyan-400" strokeWidth={2.25} />
-            </span>
-            <span className="text-lg font-semibold tracking-tight text-white">
-              TestPulse <span className="text-cyan-400">AI</span>
-            </span>
-          </Link>
-
-          <Link
-            href="/portal"
-            className="group inline-flex items-center gap-2 rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_25px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_32px_-4px_rgba(6,182,212,0.9)]"
-          >
-            Institute Workspace
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="flex-1">
         {/* Hero */}
@@ -83,6 +70,11 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
               transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
               className="absolute inset-10 rounded-full bg-cyan-500/10 ring-1 ring-cyan-500/40"
             />
+            <motion.span
+              animate={{ opacity: [0.3, 0.7, 0.3] }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+              className="absolute inset-2 rounded-full border border-cyan-500/10"
+            />
             <Activity className="relative h-10 w-10 text-cyan-400" strokeWidth={2} />
           </div>
 
@@ -99,10 +91,13 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.25 }}
-            className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-400 sm:mt-5 sm:text-lg"
+            className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-400 sm:mt-5 sm:text-lg"
           >
-            Browse chapter notes and books, practice Current Affairs, and
-            chat with an AI tutor — open to everyone, no account needed.
+            Browse chapter notes and books, practice Current Affairs, and chat
+            with an AI tutor — open to everyone, no account needed. Behind it
+            is the same platform institutes run their entire operation on:
+            timetables and homework for students, attendance and fee ledgers
+            for admins, and an AI exam engine for both.
           </motion.p>
 
           <motion.div
@@ -127,6 +122,9 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
             </a>
           </motion.div>
         </section>
+
+        {/* Subject showcase — illustrative navigation into /library */}
+        <LibraryCategoryShowcase />
 
         {/* Featured reads — real library_catalog() resources */}
         <section
@@ -243,6 +241,33 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
           </div>
         </section>
 
+        {/* Core pillars — Student Academic Hub / Management Suite & ERP / Exam Arena & AI Guru */}
+        <div className="border-t border-slate-800/60">
+          <CorePillars
+            eyebrow="One platform, three real systems"
+            title="Everything your institute runs on"
+            id="platform"
+          />
+        </div>
+
+        {/* White-label preview for institutes */}
+        <div className="border-t border-slate-800/60">
+          <WhiteLabelPreview />
+        </div>
+
+        {/* Enterprise feature grid */}
+        <div className="border-t border-slate-800/60">
+          <EnterpriseFeatures />
+        </div>
+
+        {/* Institute onboarding flow */}
+        <HowItWorks />
+
+        {/* Pricing */}
+        <div className="border-t border-slate-800/60">
+          <InstitutionPricing />
+        </div>
+
         {/* Closing CTA */}
         <section className="border-t border-slate-800/60 px-6 py-14 sm:pb-24 lg:px-8">
           <motion.div
@@ -263,43 +288,27 @@ export function PublicReadingHome({ featuredResources, isConfigured }: PublicRea
               Admins get attendance, the fees ledger, and exam deployment —
               all built on your institute&apos;s real data.
             </p>
-            <Link
-              href="/portal"
-              className="group mt-2 inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-[0_0_35px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_45px_-4px_rgba(6,182,212,0.9)]"
-            >
-              Go to Institute Workspace / Login
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            <div className="mt-2 flex flex-col items-center gap-3 sm:flex-row">
+              <Link
+                href="/portal"
+                className="group inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-3.5 text-sm font-semibold text-slate-950 shadow-[0_0_35px_-6px_rgba(6,182,212,0.8)] transition-all hover:bg-cyan-400 hover:shadow-[0_0_45px_-4px_rgba(6,182,212,0.9)]"
+              >
+                Go to Institute Workspace / Login
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+              <a
+                href="#pricing"
+                className="group inline-flex items-center gap-2 rounded-full border border-slate-700 bg-white/5 px-6 py-3.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
+              >
+                See pricing
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </a>
+            </div>
           </motion.div>
         </section>
       </main>
 
-      <footer className="border-t border-slate-800 px-6 py-10 lg:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
-              <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-            </span>
-            <span className="text-xs text-slate-600">
-              &copy; {new Date().getFullYear()} TestPulse AI. Built for schools and coaching institutes.
-            </span>
-          </div>
-          <div className="flex items-center gap-5 text-xs font-medium text-slate-500">
-            <Link href="/library" className="inline-flex items-center gap-1.5 transition-colors hover:text-cyan-400">
-              <Library className="h-3.5 w-3.5" />
-              Library
-            </Link>
-            <Link href="/exams" className="inline-flex items-center gap-1.5 transition-colors hover:text-amber-400">
-              <Rss className="h-3.5 w-3.5" />
-              Exam Arena
-            </Link>
-            <Link href="/ai-guru" className="inline-flex items-center gap-1.5 transition-colors hover:text-violet-400">
-              <Bot className="h-3.5 w-3.5" />
-              AI Guru
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
