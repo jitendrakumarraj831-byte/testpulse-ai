@@ -21,9 +21,10 @@ export interface StudentDashboardData {
   rankedStudentCount: number;
 }
 
-/** Shared by the student dashboard route and the unified home gateway
- * (`/src/app/page.tsx`) so both render identical, non-duplicated logic for
- * "this signed-in student's" streak, submission count, and leaderboard rank. */
+/** Shared by the student dashboard route and the unified institute gateway
+ * (`/src/app/portal/page.tsx`) so both render identical, non-duplicated
+ * logic for "this signed-in student's" streak, submission count, and
+ * leaderboard rank. */
 export async function getStudentDashboardData(
   supabase: ReturnType<typeof createClient>,
   user: User,

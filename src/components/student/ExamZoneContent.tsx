@@ -35,7 +35,7 @@ export function ExamZoneContent({ subjectSlug, publishedExams }: ExamZoneContent
           transition={{ duration: 0.4 }}
         >
           <Link
-            href="/"
+            href="/portal"
             className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-4 py-2.5 text-sm font-medium text-slate-300 shadow-lg backdrop-blur-md transition-all hover:border-cyan-500/50 hover:text-cyan-300"
           >
             <ArrowLeft className="h-4 w-4" />

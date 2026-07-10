@@ -167,14 +167,16 @@ const SERVICE_PILLARS: ServicePillar[] = [
   },
 ];
 
-/** The logged-out "/" experience: a product showcase explaining the real,
- * database-backed services (Student Academic Hub, Management Suite & ERP,
- * Exam Arena & AI Guru) with the two portal entry points kept front and
- * center — no invented stats, no external pricing tiers, only what the
- * platform actually does. Every feature item links straight to its real
- * page; gated ones (/student/*, /admin/*) bounce a signed-out click to
- * /auth/login and back via the shared middleware, so no click here is
- * ever a dead end. */
+/** The logged-out "/portal" experience (the public "/" is a separate
+ * guest-facing reading platform — see src/app/page.tsx): a product
+ * showcase explaining the real, database-backed services (Student Academic
+ * Hub, Management Suite & ERP, Exam Arena & AI Guru) with the two portal
+ * entry points kept front and center — no invented stats, no external
+ * pricing tiers, only what the platform actually does. Every feature item
+ * links straight to its real page; gated ones (/student/*, /admin/*)
+ * bounce a signed-out click to /auth/login and back via the shared
+ * middleware, so no click here is ever a dead end. The logo link goes to
+ * the public "/" reading platform, not back into this gateway. */
 export function GuestGateway() {
   return (
     <div className="glow-field flex min-h-screen flex-col items-center bg-slate-950 px-6 py-16">

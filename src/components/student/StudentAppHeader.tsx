@@ -45,7 +45,7 @@ export function StudentAppHeader() {
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/portal" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
               <Activity className="h-5 w-5 text-cyan-400" strokeWidth={2.25} />
             </span>
@@ -59,7 +59,7 @@ export function StudentAppHeader() {
         </div>
 
         <Link
-          href="/"
+          href="/portal"
           className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
         >
           Home
