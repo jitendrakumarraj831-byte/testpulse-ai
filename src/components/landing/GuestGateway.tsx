@@ -179,8 +179,8 @@ const SERVICE_PILLARS: ServicePillar[] = [
  * the public "/" reading platform, not back into this gateway. */
 export function GuestGateway() {
   return (
-    <div className="glow-field flex min-h-screen flex-col items-center bg-slate-950 px-6 py-16">
-      <Link href="/" className="mb-10 flex items-center gap-2.5">
+    <div className="glow-field flex min-h-screen flex-col items-center bg-slate-950 px-5 py-10 sm:px-6 sm:py-16">
+      <Link href="/" className="mb-8 flex items-center gap-2.5 sm:mb-10">
         <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
           <Activity className="h-5.5 w-5.5 text-cyan-400" strokeWidth={2.25} />
         </span>
@@ -247,7 +247,9 @@ export function GuestGateway() {
         </motion.div>
       </div>
 
-      <div className="mt-20 w-full max-w-6xl">
+      <div className="mt-12 h-px w-full max-w-6xl bg-gradient-to-r from-transparent via-slate-800 to-transparent sm:mt-16" />
+
+      <div className="mt-12 w-full max-w-6xl sm:mt-16">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -272,20 +274,20 @@ export function GuestGateway() {
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ y: -4 }}
-              className={`card-glow flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-7 backdrop-blur-md transition-all duration-300 ${pillar.accent.hoverBorder} ${pillar.accent.hoverShadow}`}
+              className={`card-glow flex flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md transition-all duration-300 sm:p-7 ${pillar.accent.hoverBorder} ${pillar.accent.hoverShadow}`}
             >
               <span
                 className={`flex h-12 w-12 items-center justify-center rounded-xl ${pillar.accent.iconBg}`}
               >
                 <pillar.icon className={`h-6 w-6 ${pillar.accent.iconText}`} />
               </span>
-              <p className={`mt-5 text-xs font-semibold uppercase tracking-widest ${pillar.accent.iconText}`}>
+              <p className={`mt-4 text-xs font-semibold uppercase tracking-widest sm:mt-5 ${pillar.accent.iconText}`}>
                 {pillar.eyebrow}
               </p>
               <h3 className="mt-1.5 text-lg font-semibold text-white">{pillar.title}</h3>
               <p className="mt-2.5 text-sm leading-relaxed text-slate-400">{pillar.description}</p>
 
-              <ul className="mt-6 flex-1 space-y-5">
+              <ul className="mt-5 flex-1 space-y-4 sm:mt-6 sm:space-y-5">
                 {pillar.items.map((item) => (
                   <li key={item.title} className="flex items-start gap-3">
                     <item.icon className={`mt-0.5 h-4 w-4 shrink-0 ${pillar.accent.iconText}`} />
@@ -308,7 +310,7 @@ export function GuestGateway() {
         </div>
       </div>
 
-      <p className="mt-16 text-xs text-slate-600">
+      <p className="mt-12 text-center text-xs text-slate-600 sm:mt-16">
         &copy; {new Date().getFullYear()} TestPulse AI. Built for schools and coaching institutes.
       </p>
     </div>
