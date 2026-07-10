@@ -94,7 +94,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="glow-field min-h-screen bg-slate-950 lg:flex">
       <aside className="hidden shrink-0 border-r border-slate-800 bg-slate-950/80 lg:flex lg:w-64 lg:flex-col">
-        <Link href="/" className="flex items-center gap-2.5 border-b border-slate-800 px-6 py-5">
+        <Link href="/portal" className="flex items-center gap-2.5 border-b border-slate-800 px-6 py-5">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
             <Activity className="h-5 w-5 text-cyan-400" strokeWidth={2.25} />
           </span>
@@ -131,7 +131,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="text-xs font-medium text-slate-300">Prime Academy</span>
           </div>
           <Link
-            href="/"
+            href="/portal"
             className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
           >
             Home
@@ -142,7 +142,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <div className="flex-1">
         <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-lg lg:hidden">
           <div className="flex items-center justify-between px-6 py-4">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/portal" className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 ring-1 ring-cyan-500/40">
                 <Activity className="h-5 w-5 text-cyan-400" strokeWidth={2.25} />
               </span>
@@ -151,7 +151,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               </span>
             </Link>
             <Link
-              href="/"
+              href="/portal"
               className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
             >
               Home
