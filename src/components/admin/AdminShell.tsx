@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  Boxes,
   CalendarClock,
   CheckSquare,
   ChevronRight,
@@ -32,6 +33,7 @@ const ADMIN_NAV: AdminNavItem[] = [
   { key: "ai-tools", label: "AI Tools", href: "/admin/ai-tools", icon: Wrench },
   { key: "generator", label: "AI Question Generator", href: "/admin/ai-generator", icon: Sparkles },
   { key: "uploader", label: "Bulk Uploader", href: "/admin/upload-questions", icon: UploadCloud },
+  { key: "resource-center", label: "Resource Center", href: "/admin/resource-center", icon: Boxes },
   { key: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarClock },
   { key: "assignments", label: "Assignments", href: "/admin/assignments", icon: ClipboardList },
   { key: "attendance", label: "Attendance", href: "/admin/attendance", icon: CheckSquare },
@@ -70,6 +72,9 @@ function getBreadcrumb(pathname: string): BreadcrumbSegment[] {
   }
   if (pathname.startsWith("/admin/students")) {
     return [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Manage Students" }];
+  }
+  if (pathname.startsWith("/admin/resource-center")) {
+    return [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Resource Center" }];
   }
   if (pathname.startsWith("/admin/schedule")) {
     return [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Schedule" }];

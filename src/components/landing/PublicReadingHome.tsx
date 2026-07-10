@@ -13,10 +13,13 @@ import { WhiteLabelPreview } from "@/components/landing/WhiteLabelPreview";
 import { EnterpriseFeatures } from "@/components/landing/EnterpriseFeatures";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { InstitutionPricing } from "@/components/landing/InstitutionPricing";
+import { OfferBanner } from "@/components/landing/OfferBanner";
 import type { LibraryResource } from "@/lib/library/types";
+import type { PromotionalOffer } from "@/lib/offers/types";
 
 interface PublicReadingHomeProps {
   featuredResources: LibraryResource[];
+  activeOffers: PromotionalOffer[];
   isConfigured: boolean;
 }
 
@@ -33,9 +36,10 @@ interface PublicReadingHomeProps {
  *    than live counts or stats.
  * The enterprise pitch previously lived at /product; it's folded back in
  * here so "/" carries the full depth of the platform before sign-in. */
-export function PublicReadingHome({ featuredResources, isConfigured }: PublicReadingHomeProps) {
+export function PublicReadingHome({ featuredResources, activeOffers, isConfigured }: PublicReadingHomeProps) {
   return (
     <div className="glow-field flex min-h-screen flex-col bg-slate-950">
+      <OfferBanner offers={activeOffers} />
       <Navbar />
 
       <main className="flex-1">

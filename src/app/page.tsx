@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { PublicReadingHome } from "@/components/landing/PublicReadingHome";
 import type { LibraryResource } from "@/lib/library/types";
+import { rowToOffer, type PromotionalOffer, type PromotionalOfferRow } from "@/lib/offers/types";
 
 export const metadata: Metadata = {
   title: "TestPulse AI | Read, Practice, and Learn",
@@ -27,22 +28,39 @@ export default async function Home() {
   noStore();
 
   let featuredResources: LibraryResource[] = [];
+  let activeOffers: PromotionalOffer[] = [];
 
   if (isSupabaseConfigured) {
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
-    const { data, error } = await supabase.rpc("library_catalog");
 
-    if (error) {
-      console.error("[home] Failed to load featured resources:", error);
+    const [{ data: resourceData, error: resourceError }, { data: offerData, error: offerError }] =
+      await Promise.all([
+        supabase.rpc("library_catalog"),
+        supabase
+          .from("promotional_offers")
+          .select("id, title, description, resource_url, is_active, starts_at, ends_at, created_at")
+          .order("created_at", { ascending: false })
+          .limit(1),
+      ]);
+
+    if (resourceError) {
+      console.error("[home] Failed to load featured resources:", resourceError);
     } else {
-      featuredResources = ((data ?? []) as LibraryResource[]).slice(0, 3);
+      featuredResources = ((resourceData ?? []) as LibraryResource[]).slice(0, 3);
+    }
+
+    if (offerError) {
+      console.error("[home] Failed to load active offers:", offerError);
+    } else {
+      activeOffers = ((offerData ?? []) as PromotionalOfferRow[]).map(rowToOffer);
     }
   }
 
   return (
     <PublicReadingHome
       featuredResources={featuredResources}
+      activeOffers={activeOffers}
       isConfigured={isSupabaseConfigured}
     />
   );

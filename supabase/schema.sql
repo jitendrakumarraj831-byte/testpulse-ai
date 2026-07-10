@@ -899,3 +899,126 @@ end;
 $$;
 
 grant execute on function public.award_learning_points() to authenticated;
+
+-- ============================================================
+-- Promotional Offers & Institutional Documents (Resource Control Center)
+-- ============================================================
+-- Deliberately separate tables from `resources` (the Reading Room /
+-- Digital Library, Module 2.2) rather than new `category` values on it —
+-- an offer banner and an institutional circular are not study content, and
+-- folding them into library_catalog()/the /library browse grid would mean
+-- every library query has to special-case non-study rows. Each of these
+-- gets its own admin form and its own display surface instead.
+
+-- An offer is publicly visible (no sign-in) only while `is_active` and
+-- inside its optional date window — that's what powers the dismissible
+-- banner on the public "/" homepage. Inactive/expired/future-dated rows
+-- stay admin-only, same masking idea as library_catalog()'s premium gate.
+create table if not exists public.promotional_offers (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  resource_url text,
+  is_active boolean not null default true,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists promotional_offers_created_at_idx
+  on public.promotional_offers (created_at desc);
+
+alter table public.promotional_offers enable row level security;
+
+create policy "Anyone can view currently active offers"
+  on public.promotional_offers for select
+  using (
+    is_active
+    and (starts_at is null or starts_at <= now())
+    and (ends_at is null or ends_at >= now())
+  );
+
+create policy "Admins can view all offers"
+  on public.promotional_offers for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can insert offers"
+  on public.promotional_offers for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update offers"
+  on public.promotional_offers for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete offers"
+  on public.promotional_offers for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- Institutional documents (circulars, policies, notices) are for enrolled
+-- students/staff, not the public — any signed-in account can read them,
+-- matching the same posture as class_schedule/assignments above.
+create table if not exists public.institutional_documents (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null default '',
+  resource_url text not null,
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists institutional_documents_created_at_idx
+  on public.institutional_documents (created_at desc);
+
+alter table public.institutional_documents enable row level security;
+
+create policy "Signed-in users can view institutional documents"
+  on public.institutional_documents for select
+  using (auth.uid() is not null);
+
+create policy "Admins can insert institutional documents"
+  on public.institutional_documents for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update institutional documents"
+  on public.institutional_documents for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete institutional documents"
+  on public.institutional_documents for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
