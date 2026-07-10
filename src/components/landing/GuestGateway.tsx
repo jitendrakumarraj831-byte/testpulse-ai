@@ -23,11 +23,14 @@ interface ServiceItem {
   icon: LucideIcon;
   title: string;
   detail: string;
-  /** Only set when the underlying page is reachable without signing in
-   * (e.g. /library, /exams, /ai-guru) — gated features like attendance or
-   * the fees ledger deliberately have no href. */
-  href?: string;
-  linkLabel?: string;
+  /** Every item links straight to its real page. Gated destinations
+   * (/student/*, /admin/*) already redirect a signed-out visitor to
+   * /auth/login?redirect=<path> via src/utils/supabase/middleware.ts, then
+   * bounce them right back here after signing in — no extra auth handling
+   * needed in this component. /library and /ai-guru stay open to guests by
+   * design, matching every other public preview route on the site. */
+  href: string;
+  linkLabel: string;
 }
 
 interface ServicePillar {
@@ -63,6 +66,8 @@ const SERVICE_PILLARS: ServicePillar[] = [
         title: "Timetable & virtual classes",
         detail:
           "See every upcoming lecture, exam, and event for your batch, with a one-tap join link when a class goes live.",
+        href: "/student/schedule",
+        linkLabel: "View your timetable",
       },
       {
         icon: BookOpen,
@@ -77,6 +82,8 @@ const SERVICE_PILLARS: ServicePillar[] = [
         title: "Homework & assignments",
         detail:
           "Track due dates, submit written responses or links, and see grades and teacher feedback the moment they're posted.",
+        href: "/student/assignments",
+        linkLabel: "View assignments",
       },
     ],
   },
@@ -98,18 +105,24 @@ const SERVICE_PILLARS: ServicePillar[] = [
         title: "Daily attendance",
         detail:
           "Mark Present, Late, or Absent per batch each day — students see their live attendance percentage and full day-by-day history.",
+        href: "/admin/attendance",
+        linkLabel: "Open attendance",
       },
       {
         icon: Wallet,
         title: "Fees ledger & receipts",
         detail:
           "Log every payment — cash, bank transfer, UPI, or cheque — against a student's fee period, with an auto-generated receipt number.",
+        href: "/admin/fees",
+        linkLabel: "Open fees ledger",
       },
       {
         icon: Receipt,
         title: "Printable receipts",
         detail:
           "Every logged payment produces a ready-to-print receipt, so front-office staff never have to draft one by hand.",
+        href: "/admin/fees",
+        linkLabel: "View receipts",
       },
     ],
   },
@@ -131,13 +144,15 @@ const SERVICE_PILLARS: ServicePillar[] = [
         title: "AI question generator",
         detail:
           "Admins pick subject, topic, difficulty, and question count — the engine drafts a full question bank to review, edit, and publish.",
+        href: "/admin/ai-generator",
+        linkLabel: "Open AI generator",
       },
       {
         icon: LineChart,
         title: "Timed subject exams",
         detail:
           "Enter live, subject-wise exams with instant scoring, and every graded exam rolls into your running score history.",
-        href: "/exams",
+        href: "/student/dashboard",
         linkLabel: "Enter Exam Arena",
       },
       {
@@ -156,8 +171,10 @@ const SERVICE_PILLARS: ServicePillar[] = [
  * database-backed services (Student Academic Hub, Management Suite & ERP,
  * Exam Arena & AI Guru) with the two portal entry points kept front and
  * center — no invented stats, no external pricing tiers, only what the
- * platform actually does. Feature items that are reachable without signing
- * in link straight through to the live page. */
+ * platform actually does. Every feature item links straight to its real
+ * page; gated ones (/student/*, /admin/*) bounce a signed-out click to
+ * /auth/login and back via the shared middleware, so no click here is
+ * ever a dead end. */
 export function GuestGateway() {
   return (
     <div className="glow-field flex min-h-screen flex-col items-center bg-slate-950 px-6 py-16">
@@ -273,15 +290,13 @@ export function GuestGateway() {
                     <div>
                       <p className="text-sm font-medium text-white">{item.title}</p>
                       <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{item.detail}</p>
-                      {item.href && (
-                        <Link
-                          href={item.href}
-                          className={`group/link mt-1.5 inline-flex items-center gap-1 text-xs font-semibold ${pillar.accent.iconText} transition-colors hover:brightness-125`}
-                        >
-                          {item.linkLabel}
-                          <ArrowRight className="h-3 w-3 transition-transform group-hover/link:translate-x-1" />
-                        </Link>
-                      )}
+                      <Link
+                        href={item.href}
+                        className={`group/link mt-1.5 inline-flex items-center gap-1 text-xs font-semibold ${pillar.accent.iconText} transition-colors hover:brightness-125`}
+                      >
+                        {item.linkLabel}
+                        <ArrowRight className="h-3 w-3 transition-transform group-hover/link:translate-x-1" />
+                      </Link>
                     </div>
                   </li>
                 ))}
