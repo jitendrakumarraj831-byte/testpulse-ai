@@ -8,6 +8,7 @@ import {
   Video,
 } from "lucide-react";
 import type { Assignment, ScheduleEntry } from "@/lib/academic-hub/types";
+import { RewardVaultCard } from "@/components/student/RewardVaultCard";
 
 interface StudentHomeOverviewProps {
   displayName: string;
@@ -153,6 +154,8 @@ export function StudentHomeOverview({
           </Link>
         </div>
       </div>
+
+      <RewardVaultCard />
     </div>
   );
 }

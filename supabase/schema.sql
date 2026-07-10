@@ -766,3 +766,136 @@ create policy "Admins can delete fee payments"
       where admin_check.id = auth.uid() and admin_check.role = 'admin'
     )
   );
+
+-- ============================================================
+-- Gamified Reward Vault (Module 2.4)
+-- ============================================================
+-- `source_key` is an idempotency key ('daily:2026-07-10',
+-- 'streak-milestone:7', ...) enforced by the unique constraint below, so
+-- calling award_learning_points() many times in a row (every dashboard
+-- load, every test submission) never double-awards the same event.
+create table if not exists public.reward_points_ledger (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references auth.users (id) on delete cascade,
+  points integer not null check (points > 0),
+  reason text not null,
+  source_key text not null,
+  created_at timestamptz not null default now(),
+  unique (student_id, source_key)
+);
+
+create index if not exists reward_points_ledger_student_id_idx
+  on public.reward_points_ledger (student_id);
+
+alter table public.reward_points_ledger enable row level security;
+
+create policy "Students can view their own reward points"
+  on public.reward_points_ledger for select
+  using (auth.uid() = student_id);
+
+create policy "Admins can view all reward points"
+  on public.reward_points_ledger for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- Deliberately no insert/update/delete policy for students or admins —
+-- every row is written exclusively by award_learning_points() below (a
+-- security definer function), so a client can never insert an arbitrary
+-- point value for itself via a direct table write.
+
+-- Recomputes this student's award state from their own real
+-- student_responses history and inserts any ledger rows they've newly
+-- earned: +10 points the first time they're awarded for a day they've
+-- submitted at least one test, plus a one-time bonus (5 * the milestone)
+-- the first time their *current* (still-live) streak reaches 3, 7, 14,
+-- 30, 60, or 100 days. Safe and cheap to call on every dashboard load and
+-- after every test submission — already-earned events are no-ops thanks
+-- to the (student_id, source_key) unique constraint.
+create or replace function public.award_learning_points()
+returns table (points_awarded integer, new_awards integer)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_student_id uuid := auth.uid();
+  v_today date := current_date;
+  v_has_activity_today boolean;
+  v_attempt_days date[];
+  v_streak integer := 0;
+  v_day date;
+  v_prev date;
+  v_total_awarded integer := 0;
+  v_award_count integer := 0;
+  v_milestone integer;
+begin
+  if v_student_id is null then
+    return query select 0, 0;
+    return;
+  end if;
+
+  select exists (
+    select 1 from public.student_responses
+    where student_id = v_student_id and submitted_at::date = v_today
+  ) into v_has_activity_today;
+
+  if v_has_activity_today then
+    insert into public.reward_points_ledger (student_id, points, reason, source_key)
+    values (v_student_id, 10, 'Daily learning activity', 'daily:' || v_today::text)
+    on conflict (student_id, source_key) do nothing;
+    if found then
+      v_total_awarded := v_total_awarded + 10;
+      v_award_count := v_award_count + 1;
+    end if;
+  end if;
+
+  select array_agg(distinct submitted_at::date order by submitted_at::date)
+  into v_attempt_days
+  from public.student_responses
+  where student_id = v_student_id;
+
+  if v_attempt_days is not null and array_length(v_attempt_days, 1) > 0 then
+    v_prev := null;
+    foreach v_day in array v_attempt_days loop
+      if v_prev is null or v_day - v_prev > 1 then
+        v_streak := 1;
+      elsif v_day - v_prev = 1 then
+        v_streak := v_streak + 1;
+      end if;
+      v_prev := v_day;
+    end loop;
+
+    -- Only a still-live streak (last attempt today or yesterday) counts
+    -- for a milestone award — matches the client-side computeStreakSummary
+    -- definition of "current streak" in src/lib/student/streak.ts.
+    if v_today - v_prev > 1 then
+      v_streak := 0;
+    end if;
+
+    foreach v_milestone in array array[3, 7, 14, 30, 60, 100] loop
+      if v_streak >= v_milestone then
+        insert into public.reward_points_ledger (student_id, points, reason, source_key)
+        values (
+          v_student_id,
+          v_milestone * 5,
+          v_milestone || '-day consistency streak',
+          'streak-milestone:' || v_milestone::text
+        )
+        on conflict (student_id, source_key) do nothing;
+        if found then
+          v_total_awarded := v_total_awarded + v_milestone * 5;
+          v_award_count := v_award_count + 1;
+        end if;
+      end if;
+    end loop;
+  end if;
+
+  return query select v_total_awarded, v_award_count;
+end;
+$$;
+
+grant execute on function public.award_learning_points() to authenticated;
