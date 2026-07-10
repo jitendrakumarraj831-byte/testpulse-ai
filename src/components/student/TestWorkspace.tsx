@@ -24,6 +24,7 @@ import type { StudentResponseInsert } from "@/lib/student/responses";
 import { createClient } from "@/utils/supabase/client";
 import { CornerBrackets } from "@/components/ui/CornerBrackets";
 import { getStoredStudentName, rememberStudentName } from "@/lib/student/streak";
+import { awardLearningPoints } from "@/lib/student/rewards";
 import { getInstituteSettings } from "@/lib/admin/settings";
 import { PerformanceBreakdown } from "@/components/student/PerformanceBreakdown";
 
@@ -133,6 +134,15 @@ export function TestWorkspace({
 
       if (error) throw error;
       setSaveStatus("saved");
+
+      // Reward points are earned from real submission history computed
+      // server-side (see award_learning_points() in supabase/schema.sql) —
+      // fire-and-forget here since it's not on the critical submit path,
+      // and the student's Reward Vault card re-derives the same state on
+      // its own next load either way.
+      if (authUserId) {
+        void awardLearningPoints(supabase);
+      }
     } catch (error) {
       console.error("Failed to save test response:", error);
       setSaveStatus("error");
