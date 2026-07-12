@@ -702,13 +702,11 @@ create policy "Admins can delete attendance"
 -- ============================================================
 -- Fee Ledger & Receipts (Module 4.2)
 -- ============================================================
--- Manual ledger only — an admin records a payment they already received
--- (cash, bank transfer, UPI, etc.) and this generates a receipt. There is
--- deliberately no payment gateway integration here and no way for money to
--- move through the app itself; that's a materially bigger, separate
--- decision (choosing and wiring a live gateway) that hasn't been made.
--- `student_id` is nullable so a payment can be recorded against a walk-in
--- payer who doesn't have (or doesn't yet have) an account.
+-- Started as a manual-only ledger (an admin records a payment they already
+-- received in cash/bank transfer/etc.) and now also receives rows written
+-- by the Razorpay integration below (Module 4.3) once a student pays a
+-- `fee_dues` row online. `student_id` stays nullable so a payment can still
+-- be recorded against a walk-in payer who doesn't have an account.
 create table if not exists public.fee_payments (
   id uuid primary key default gen_random_uuid(),
   receipt_number text not null,
@@ -727,10 +725,30 @@ create table if not exists public.fee_payments (
 create index if not exists fee_payments_paid_at_idx on public.fee_payments (paid_at);
 create index if not exists fee_payments_student_id_idx on public.fee_payments (student_id);
 
+-- Module 4.3 additions: which due (if any) this payment settles, and the
+-- gateway trail needed to reconcile it against Razorpay's own records.
+-- `due_id` has no inline FK here because `fee_dues` is defined later in
+-- this file — the constraint is added right after that table exists (see
+-- "Fee Dues" section below). `gateway_payment_id` is unique-indexed
+-- (partial, since manual rows leave it null) so the webhook handler and
+-- the client-side verify call can both race to record the same captured
+-- payment without creating a duplicate.
+alter table public.fee_payments
+  add column if not exists due_id uuid,
+  add column if not exists gateway text not null default 'manual' check (gateway in ('manual', 'razorpay')),
+  add column if not exists gateway_order_id text,
+  add column if not exists gateway_payment_id text,
+  add column if not exists gateway_signature text;
+
+create unique index if not exists fee_payments_gateway_payment_id_idx
+  on public.fee_payments (gateway_payment_id)
+  where gateway_payment_id is not null;
+
 alter table public.fee_payments enable row level security;
 
--- Financial records — admin-only in every direction, no student read
--- access (a student's own fee history isn't exposed by this module yet).
+-- Financial records — admin can see/write everything; a student can read
+-- (but never write) their own payment history, matching the read-only
+-- student policies used elsewhere (attendance, assignments, ...).
 create policy "Admins can view fee payments"
   on public.fee_payments for select
   using (
@@ -739,6 +757,10 @@ create policy "Admins can view fee payments"
       where admin_check.id = auth.uid() and admin_check.role = 'admin'
     )
   );
+
+create policy "Students can view their own fee payments"
+  on public.fee_payments for select
+  using (student_id = auth.uid());
 
 create policy "Admins can record fee payments"
   on public.fee_payments for insert
@@ -760,6 +782,92 @@ create policy "Admins can update fee payments"
 
 create policy "Admins can delete fee payments"
   on public.fee_payments for delete
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+-- ============================================================
+-- Fee Dues & Online Payments via Razorpay (Module 4.3)
+-- ============================================================
+-- An admin raises a due (amount owed, for a period, optionally with a due
+-- date) against a real student account. The student then pays it from
+-- their dashboard through Razorpay Checkout — the API routes under
+-- /api/payments/* create the Razorpay order and, once payment is verified
+-- (both a client-side verify call and a server-to-server webhook write the
+-- same row, whichever lands first — see fee_payments_gateway_payment_id_idx
+-- above for the idempotency guard), insert a matching `fee_payments` row
+-- with gateway = 'razorpay' and flip this due to 'paid'. All of that
+-- writing happens through the service-role client (bypassing RLS) since a
+-- student must never be able to mark their own due as paid directly.
+create table if not exists public.fee_dues (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references auth.users (id) on delete cascade,
+  amount numeric not null check (amount > 0),
+  fee_period text not null default '',
+  due_date date,
+  notes text not null default '',
+  status text not null default 'pending' check (status in ('pending', 'paid', 'cancelled')),
+  created_by uuid references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists fee_dues_student_id_idx on public.fee_dues (student_id);
+create index if not exists fee_dues_status_idx on public.fee_dues (status);
+
+-- Postgres has no `ADD CONSTRAINT IF NOT EXISTS`, so this guard is what
+-- keeps re-running this file against an already-migrated database safe.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'fee_payments_due_id_fkey'
+  ) then
+    alter table public.fee_payments
+      add constraint fee_payments_due_id_fkey
+        foreign key (due_id) references public.fee_dues (id) on delete set null;
+  end if;
+end $$;
+
+create index if not exists fee_payments_due_id_idx on public.fee_payments (due_id);
+
+alter table public.fee_dues enable row level security;
+
+create policy "Admins can view fee dues"
+  on public.fee_dues for select
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Students can view their own fee dues"
+  on public.fee_dues for select
+  using (student_id = auth.uid());
+
+create policy "Admins can create fee dues"
+  on public.fee_dues for insert
+  with check (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can update fee dues"
+  on public.fee_dues for update
+  using (
+    exists (
+      select 1 from public.profiles admin_check
+      where admin_check.id = auth.uid() and admin_check.role = 'admin'
+    )
+  );
+
+create policy "Admins can delete fee dues"
+  on public.fee_dues for delete
   using (
     exists (
       select 1 from public.profiles admin_check

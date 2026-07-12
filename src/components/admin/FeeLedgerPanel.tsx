@@ -16,6 +16,8 @@ import { CornerBrackets } from "@/components/ui/CornerBrackets";
 
 type PaymentMethod = "cash" | "bank_transfer" | "upi" | "cheque" | "other";
 
+type Gateway = "manual" | "razorpay";
+
 interface FeePayment {
   id: string;
   receiptNumber: string;
@@ -25,6 +27,7 @@ interface FeePayment {
   feePeriod: string;
   notes: string;
   paidAt: string;
+  gateway: Gateway;
 }
 
 interface FeePaymentRow {
@@ -36,6 +39,7 @@ interface FeePaymentRow {
   fee_period: string;
   notes: string;
   paid_at: string;
+  gateway: Gateway;
 }
 
 type LoadState =
@@ -61,6 +65,7 @@ function rowToPayment(row: FeePaymentRow): FeePayment {
     feePeriod: row.fee_period,
     notes: row.notes,
     paidAt: row.paid_at,
+    gateway: row.gateway,
   };
 }
 
@@ -154,7 +159,7 @@ export function FeeLedgerPanel() {
 
     const { data, error } = await supabase
       .from("fee_payments")
-      .select("id, receipt_number, payer_name, amount, payment_method, fee_period, notes, paid_at")
+      .select("id, receipt_number, payer_name, amount, payment_method, fee_period, notes, paid_at, gateway")
       .order("paid_at", { ascending: false });
 
     if (error || !data) {
@@ -220,7 +225,8 @@ export function FeeLedgerPanel() {
           <div>
             <h1 className="text-glow text-2xl font-bold text-white sm:text-3xl">Fee Ledger</h1>
             <p className="mt-1 text-sm text-slate-500">
-              Record payments received and generate receipts. No online payment collection — this is a manual ledger.
+              Record payments received and generate receipts. Manual entries plus anything students paid
+              online show up here together — see Fee Dues to raise a payable online.
             </p>
           </div>
         </div>
@@ -361,6 +367,9 @@ export function FeeLedgerPanel() {
                   <p className="mt-0.5 font-mono text-xs text-slate-500">{payment.receiptNumber}</p>
                 </div>
                 <div className="flex items-center gap-4">
+                  <span className="rounded-full border border-slate-700 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-400">
+                    {payment.gateway === "razorpay" ? "Online" : "Manual"}
+                  </span>
                   <p className="text-sm font-semibold text-emerald-400">{formatCurrency(payment.amount)}</p>
                   <p className="text-xs text-slate-500">{formatDate(payment.paidAt)}</p>
                 </div>
