@@ -128,7 +128,7 @@ export function StudentDirectory() {
 
     const { error } = await supabase.auth.resetPasswordForEmail(student.email, {
       redirectTo:
-        typeof window !== "undefined" ? `${window.location.origin}/auth/login` : undefined,
+        typeof window !== "undefined" ? `${window.location.origin}/auth/reset-password` : undefined,
     });
 
     setBusyId(null);
