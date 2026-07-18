@@ -34,6 +34,7 @@ alter table public.exams enable row level security;
 alter table public.student_responses enable row level security;
 
 -- Published exams are readable by anyone with the link (students taking a test).
+drop policy if exists "Exams are publicly readable" on public.exams;
 create policy "Exams are publicly readable"
   on public.exams for select
   using (true);
@@ -42,11 +43,13 @@ create policy "Exams are publicly readable"
 -- using the same anon/publishable key as everything else in this app (no
 -- separate admin-auth system yet), so an insert policy is required or
 -- RLS silently rejects every "Approve & Publish Test" click.
+drop policy if exists "Anyone can publish an exam" on public.exams;
 create policy "Anyone can publish an exam"
   on public.exams for insert
   with check (true);
 
 -- Students may submit responses; responses are not publicly listable.
+drop policy if exists "Anyone can submit a student response" on public.student_responses;
 create policy "Anyone can submit a student response"
   on public.student_responses for insert
   with check (true);
@@ -101,6 +104,7 @@ alter table public.demo_requests enable row level security;
 
 -- Anyone can submit an inquiry; inquiries are not publicly listable
 -- (only readable via the service role / Supabase dashboard).
+drop policy if exists "Anyone can submit a demo request" on public.demo_requests;
 create policy "Anyone can submit a demo request"
   on public.demo_requests for insert
   with check (true);
@@ -171,10 +175,12 @@ create table if not exists public.profiles (
 alter table public.profiles enable row level security;
 
 -- Every signed-in user can see and edit their own profile row.
+drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update
   using (auth.uid() = id);
@@ -183,6 +189,7 @@ create policy "Users can update their own profile"
 -- CALLER's own row (admin_check.id = auth.uid()), which the policy above
 -- already makes visible to them — so this does not recurse into itself,
 -- it's the standard Supabase role-check idiom.
+drop policy if exists "Admins can view all profiles" on public.profiles;
 create policy "Admins can view all profiles"
   on public.profiles for select
   using (
@@ -192,6 +199,7 @@ create policy "Admins can view all profiles"
     )
   );
 
+drop policy if exists "Admins can update any profile" on public.profiles;
 create policy "Admins can update any profile"
   on public.profiles for update
   using (
@@ -321,11 +329,13 @@ alter table public.institute_settings enable row level security;
 -- Readable by anyone — the anonymous exam workspace (TestWorkspace) needs
 -- ai_proctoring_enabled to decide whether to run its anti-cheat engine,
 -- and there's no per-student sensitivity in these two flags.
+drop policy if exists "Institute settings are publicly readable" on public.institute_settings;
 create policy "Institute settings are publicly readable"
   on public.institute_settings for select
   using (true);
 
 -- Only admins may change them (same admin-check idiom as the profiles policies).
+drop policy if exists "Admins can update institute settings" on public.institute_settings;
 create policy "Admins can update institute settings"
   on public.institute_settings for update
   using (
@@ -367,6 +377,7 @@ alter table public.resources enable row level security;
 -- decide what to return — same justification as `exam_question_stats`
 -- above. Admins get their own direct-table policies further down for
 -- managing entries.
+drop policy if exists "Admins can view all resource columns" on public.resources;
 create policy "Admins can view all resource columns"
   on public.resources for select
   using (
@@ -376,6 +387,7 @@ create policy "Admins can view all resource columns"
     )
   );
 
+drop policy if exists "Admins can insert resources" on public.resources;
 create policy "Admins can insert resources"
   on public.resources for insert
   with check (
@@ -385,6 +397,7 @@ create policy "Admins can insert resources"
     )
   );
 
+drop policy if exists "Admins can update resources" on public.resources;
 create policy "Admins can update resources"
   on public.resources for update
   using (
@@ -394,6 +407,7 @@ create policy "Admins can update resources"
     )
   );
 
+drop policy if exists "Admins can delete resources" on public.resources;
 create policy "Admins can delete resources"
   on public.resources for delete
   using (
@@ -478,10 +492,12 @@ create index if not exists class_schedule_starts_at_idx on public.class_schedule
 
 alter table public.class_schedule enable row level security;
 
+drop policy if exists "Signed-in users can view the schedule" on public.class_schedule;
 create policy "Signed-in users can view the schedule"
   on public.class_schedule for select
   using (auth.uid() is not null);
 
+drop policy if exists "Admins can insert schedule entries" on public.class_schedule;
 create policy "Admins can insert schedule entries"
   on public.class_schedule for insert
   with check (
@@ -491,6 +507,7 @@ create policy "Admins can insert schedule entries"
     )
   );
 
+drop policy if exists "Admins can update schedule entries" on public.class_schedule;
 create policy "Admins can update schedule entries"
   on public.class_schedule for update
   using (
@@ -500,6 +517,7 @@ create policy "Admins can update schedule entries"
     )
   );
 
+drop policy if exists "Admins can delete schedule entries" on public.class_schedule;
 create policy "Admins can delete schedule entries"
   on public.class_schedule for delete
   using (
@@ -524,10 +542,12 @@ create index if not exists assignments_due_at_idx on public.assignments (due_at)
 
 alter table public.assignments enable row level security;
 
+drop policy if exists "Signed-in users can view assignments" on public.assignments;
 create policy "Signed-in users can view assignments"
   on public.assignments for select
   using (auth.uid() is not null);
 
+drop policy if exists "Admins can insert assignments" on public.assignments;
 create policy "Admins can insert assignments"
   on public.assignments for insert
   with check (
@@ -537,6 +557,7 @@ create policy "Admins can insert assignments"
     )
   );
 
+drop policy if exists "Admins can update assignments" on public.assignments;
 create policy "Admins can update assignments"
   on public.assignments for update
   using (
@@ -546,6 +567,7 @@ create policy "Admins can update assignments"
     )
   );
 
+drop policy if exists "Admins can delete assignments" on public.assignments;
 create policy "Admins can delete assignments"
   on public.assignments for delete
   using (
@@ -578,10 +600,12 @@ alter table public.assignment_submissions enable row level security;
 
 -- Students see and manage only their own submission; admins see every
 -- submission (needed to grade them).
+drop policy if exists "Students can view their own submissions" on public.assignment_submissions;
 create policy "Students can view their own submissions"
   on public.assignment_submissions for select
   using (auth.uid() = student_id);
 
+drop policy if exists "Admins can view all submissions" on public.assignment_submissions;
 create policy "Admins can view all submissions"
   on public.assignment_submissions for select
   using (
@@ -591,14 +615,17 @@ create policy "Admins can view all submissions"
     )
   );
 
+drop policy if exists "Students can submit their own work" on public.assignment_submissions;
 create policy "Students can submit their own work"
   on public.assignment_submissions for insert
   with check (auth.uid() = student_id);
 
+drop policy if exists "Students can update their own submission" on public.assignment_submissions;
 create policy "Students can update their own submission"
   on public.assignment_submissions for update
   using (auth.uid() = student_id);
 
+drop policy if exists "Admins can update any submission" on public.assignment_submissions;
 create policy "Admins can update any submission"
   on public.assignment_submissions for update
   using (
@@ -659,10 +686,12 @@ create index if not exists attendance_records_date_idx on public.attendance_reco
 
 alter table public.attendance_records enable row level security;
 
+drop policy if exists "Students can view their own attendance" on public.attendance_records;
 create policy "Students can view their own attendance"
   on public.attendance_records for select
   using (auth.uid() = student_id);
 
+drop policy if exists "Admins can view all attendance" on public.attendance_records;
 create policy "Admins can view all attendance"
   on public.attendance_records for select
   using (
@@ -672,6 +701,7 @@ create policy "Admins can view all attendance"
     )
   );
 
+drop policy if exists "Admins can record attendance" on public.attendance_records;
 create policy "Admins can record attendance"
   on public.attendance_records for insert
   with check (
@@ -681,6 +711,7 @@ create policy "Admins can record attendance"
     )
   );
 
+drop policy if exists "Admins can update attendance" on public.attendance_records;
 create policy "Admins can update attendance"
   on public.attendance_records for update
   using (
@@ -690,6 +721,7 @@ create policy "Admins can update attendance"
     )
   );
 
+drop policy if exists "Admins can delete attendance" on public.attendance_records;
 create policy "Admins can delete attendance"
   on public.attendance_records for delete
   using (
@@ -749,6 +781,7 @@ alter table public.fee_payments enable row level security;
 -- Financial records — admin can see/write everything; a student can read
 -- (but never write) their own payment history, matching the read-only
 -- student policies used elsewhere (attendance, assignments, ...).
+drop policy if exists "Admins can view fee payments" on public.fee_payments;
 create policy "Admins can view fee payments"
   on public.fee_payments for select
   using (
@@ -758,10 +791,12 @@ create policy "Admins can view fee payments"
     )
   );
 
+drop policy if exists "Students can view their own fee payments" on public.fee_payments;
 create policy "Students can view their own fee payments"
   on public.fee_payments for select
   using (student_id = auth.uid());
 
+drop policy if exists "Admins can record fee payments" on public.fee_payments;
 create policy "Admins can record fee payments"
   on public.fee_payments for insert
   with check (
@@ -771,6 +806,7 @@ create policy "Admins can record fee payments"
     )
   );
 
+drop policy if exists "Admins can update fee payments" on public.fee_payments;
 create policy "Admins can update fee payments"
   on public.fee_payments for update
   using (
@@ -780,6 +816,7 @@ create policy "Admins can update fee payments"
     )
   );
 
+drop policy if exists "Admins can delete fee payments" on public.fee_payments;
 create policy "Admins can delete fee payments"
   on public.fee_payments for delete
   using (
@@ -835,6 +872,7 @@ create index if not exists fee_payments_due_id_idx on public.fee_payments (due_i
 
 alter table public.fee_dues enable row level security;
 
+drop policy if exists "Admins can view fee dues" on public.fee_dues;
 create policy "Admins can view fee dues"
   on public.fee_dues for select
   using (
@@ -844,10 +882,12 @@ create policy "Admins can view fee dues"
     )
   );
 
+drop policy if exists "Students can view their own fee dues" on public.fee_dues;
 create policy "Students can view their own fee dues"
   on public.fee_dues for select
   using (student_id = auth.uid());
 
+drop policy if exists "Admins can create fee dues" on public.fee_dues;
 create policy "Admins can create fee dues"
   on public.fee_dues for insert
   with check (
@@ -857,6 +897,7 @@ create policy "Admins can create fee dues"
     )
   );
 
+drop policy if exists "Admins can update fee dues" on public.fee_dues;
 create policy "Admins can update fee dues"
   on public.fee_dues for update
   using (
@@ -866,6 +907,7 @@ create policy "Admins can update fee dues"
     )
   );
 
+drop policy if exists "Admins can delete fee dues" on public.fee_dues;
 create policy "Admins can delete fee dues"
   on public.fee_dues for delete
   using (
@@ -897,10 +939,12 @@ create index if not exists reward_points_ledger_student_id_idx
 
 alter table public.reward_points_ledger enable row level security;
 
+drop policy if exists "Students can view their own reward points" on public.reward_points_ledger;
 create policy "Students can view their own reward points"
   on public.reward_points_ledger for select
   using (auth.uid() = student_id);
 
+drop policy if exists "Admins can view all reward points" on public.reward_points_ledger;
 create policy "Admins can view all reward points"
   on public.reward_points_ledger for select
   using (
@@ -1039,6 +1083,7 @@ create index if not exists promotional_offers_created_at_idx
 
 alter table public.promotional_offers enable row level security;
 
+drop policy if exists "Anyone can view currently active offers" on public.promotional_offers;
 create policy "Anyone can view currently active offers"
   on public.promotional_offers for select
   using (
@@ -1047,6 +1092,7 @@ create policy "Anyone can view currently active offers"
     and (ends_at is null or ends_at >= now())
   );
 
+drop policy if exists "Admins can view all offers" on public.promotional_offers;
 create policy "Admins can view all offers"
   on public.promotional_offers for select
   using (
@@ -1056,6 +1102,7 @@ create policy "Admins can view all offers"
     )
   );
 
+drop policy if exists "Admins can insert offers" on public.promotional_offers;
 create policy "Admins can insert offers"
   on public.promotional_offers for insert
   with check (
@@ -1065,6 +1112,7 @@ create policy "Admins can insert offers"
     )
   );
 
+drop policy if exists "Admins can update offers" on public.promotional_offers;
 create policy "Admins can update offers"
   on public.promotional_offers for update
   using (
@@ -1074,6 +1122,7 @@ create policy "Admins can update offers"
     )
   );
 
+drop policy if exists "Admins can delete offers" on public.promotional_offers;
 create policy "Admins can delete offers"
   on public.promotional_offers for delete
   using (
@@ -1100,10 +1149,12 @@ create index if not exists institutional_documents_created_at_idx
 
 alter table public.institutional_documents enable row level security;
 
+drop policy if exists "Signed-in users can view institutional documents" on public.institutional_documents;
 create policy "Signed-in users can view institutional documents"
   on public.institutional_documents for select
   using (auth.uid() is not null);
 
+drop policy if exists "Admins can insert institutional documents" on public.institutional_documents;
 create policy "Admins can insert institutional documents"
   on public.institutional_documents for insert
   with check (
@@ -1113,6 +1164,7 @@ create policy "Admins can insert institutional documents"
     )
   );
 
+drop policy if exists "Admins can update institutional documents" on public.institutional_documents;
 create policy "Admins can update institutional documents"
   on public.institutional_documents for update
   using (
@@ -1122,6 +1174,7 @@ create policy "Admins can update institutional documents"
     )
   );
 
+drop policy if exists "Admins can delete institutional documents" on public.institutional_documents;
 create policy "Admins can delete institutional documents"
   on public.institutional_documents for delete
   using (
