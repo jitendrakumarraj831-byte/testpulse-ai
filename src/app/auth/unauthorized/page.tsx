@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 export const metadata: Metadata = {
   title: "Access Denied | TestPulse AI",
@@ -19,12 +20,15 @@ export default function UnauthorizedPage() {
           Your account is signed in but isn&apos;t an admin. If this should be
           an admin account, ask an existing admin to promote it.
         </p>
-        <Link
-          href="/"
-          className="mt-3 inline-flex items-center justify-center rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
-        >
-          Back to home
-        </Link>
+        <div className="mt-3 flex items-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-full border border-slate-700 bg-white/5 px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-cyan-300"
+          >
+            Back to home
+          </Link>
+          <SignOutButton label="Sign out" />
+        </div>
       </div>
     </AuthShell>
   );

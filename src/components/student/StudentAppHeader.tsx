@@ -17,6 +17,7 @@ import {
   Trophy,
   type LucideIcon,
 } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 interface StudentNavItem {
   key: string;
@@ -62,12 +63,15 @@ export function StudentAppHeader() {
           </span>
         </div>
 
-        <Link
-          href="/portal"
-          className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
-        >
-          Home
-        </Link>
+        <div className="flex items-center gap-5">
+          <Link
+            href="/portal"
+            className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
+          >
+            Home
+          </Link>
+          <SignOutButton />
+        </div>
       </div>
 
       <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 lg:px-6">

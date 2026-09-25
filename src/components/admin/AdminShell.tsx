@@ -20,6 +20,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { SignOutButton } from "@/components/auth/SignOutButton";
 
 interface AdminNavItem {
   key: string;
@@ -140,12 +141,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </span>
             <span className="text-xs font-medium text-slate-300">Prime Academy</span>
           </div>
-          <Link
-            href="/portal"
-            className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
-          >
-            Home
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/portal"
+              className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
+            >
+              Home
+            </Link>
+            <SignOutButton />
+          </div>
         </div>
       </aside>
 
@@ -160,12 +164,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 TestPulse <span className="text-cyan-400">AI</span>
               </span>
             </Link>
-            <Link
-              href="/portal"
-              className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
-            >
-              Home
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/portal"
+                className="text-sm font-medium text-slate-400 transition-colors hover:text-cyan-400"
+              >
+                Home
+              </Link>
+              <SignOutButton />
+            </div>
           </div>
           <div className="flex gap-1 overflow-x-auto px-4">
             {ADMIN_NAV.map((item) => {
